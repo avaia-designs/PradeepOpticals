@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Heart, User, Menu, X, Eye } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, Eye, Phone, Mail, MapPin } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useUserStore } from '@/stores/user-store';
 import { useProductSuggestions } from '@/hooks/use-products';
@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -66,33 +67,41 @@ export function Header({ className }: HeaderProps) {
   };
 
   return (
-    <header className={cn('sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60', className)}>
-      <div className="container mx-auto px-4">
-        {/* Top Bar */}
-        <div className="hidden md:flex items-center justify-between py-2 text-sm text-muted-foreground border-b">
-          <div className="flex items-center space-x-4">
-            <span>Free shipping on orders over $50</span>
-            <span>•</span>
-            <span>30-day return policy</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/contact" className="hover:text-foreground transition-colors">
-              Contact Us
-            </Link>
-            <Link href="/help" className="hover:text-foreground transition-colors">
-              Help Center
-            </Link>
-            <span>•</span>
-            <span>Call: (555) 123-4567</span>
+    <header className={cn('sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b', className)}>
+      {/* Top Bar */}
+      <div className="hidden lg:block border-b bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between py-2 text-sm">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>(555) 123-4567</span>
+              </div>
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                <span>info@pradeepopticals.com</span>
+              </div>
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                <span>123 Main St, City</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-muted-foreground">Free shipping on orders over $50</span>
+              <Separator orientation="vertical" className="h-4" />
+              <span className="text-muted-foreground">30-day return policy</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Header */}
-        <div className="flex items-center justify-between py-4">
+      {/* Main Navigation */}
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Mobile Menu Button */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
@@ -103,22 +112,47 @@ export function Header({ className }: HeaderProps) {
           </Sheet>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <Eye className="h-10 w-10 text-primary" />
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="relative">
+              <Eye className="h-10 w-10 text-primary group-hover:scale-110 transition-transform duration-200" />
+              <div className="absolute -inset-1 bg-primary/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+            </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-xl font-bold gradient-text font-heading">Pradeep</span>
-              <span className="text-xl font-bold gradient-text font-heading">Opticals</span>
+              <span className="text-xl font-bold gradient-text font-heading group-hover:scale-105 transition-transform duration-200">Pradeep</span>
+              <span className="text-xl font-bold gradient-text font-heading group-hover:scale-105 transition-transform duration-200">Opticals</span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">
-              Products
-            </Link>
-            <Link href="/categories" className="text-sm font-medium hover:text-primary transition-colors">
-              Categories
-            </Link>
+          <nav className="hidden lg:flex items-center space-x-8">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="font-medium">
+                  Products
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel>Eyewear Categories</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/products/prescription-glasses">Prescription Glasses</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/products/sunglasses">Sunglasses</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/products/reading-glasses">Reading Glasses</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/products/computer-glasses">Computer Glasses</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/products">View All Products</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Link href="/brands" className="text-sm font-medium hover:text-primary transition-colors">
               Brands
             </Link>
@@ -127,6 +161,9 @@ export function Header({ className }: HeaderProps) {
             </Link>
             <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">
               About
+            </Link>
+            <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors">
+              Contact
             </Link>
           </nav>
 
@@ -138,7 +175,7 @@ export function Header({ className }: HeaderProps) {
                 <Input
                   type="text"
                   placeholder="Search for glasses, frames, lenses..."
-                  className="pl-10 pr-4 py-2 w-full"
+                  className="pl-10 pr-4 py-2 w-full rounded-full border-2 focus:border-primary transition-colors"
                   onChange={handleSearch}
                   onFocus={() => setIsSearchOpen(true)}
                   onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
@@ -147,7 +184,7 @@ export function Header({ className }: HeaderProps) {
               
               {/* Search Suggestions Dropdown */}
               {isSearchOpen && (searchQuery || suggestions.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-xl z-50 overflow-hidden">
                   {isSuggestionsLoading ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
                       Loading suggestions...
@@ -157,10 +194,11 @@ export function Header({ className }: HeaderProps) {
                       {suggestions.map((suggestion, index) => (
                         <button
                           key={index}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors"
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-muted transition-colors flex items-center space-x-2"
                           onClick={() => handleSuggestionClick(suggestion)}
                         >
-                          {suggestion}
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <span>{suggestion}</span>
                         </button>
                       ))}
                     </div>
@@ -175,7 +213,7 @@ export function Header({ className }: HeaderProps) {
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             {/* Mobile Search */}
             <Button variant="ghost" size="icon" className="md:hidden">
               <Search className="h-5 w-5" />
@@ -183,7 +221,7 @@ export function Header({ className }: HeaderProps) {
             </Button>
 
             {/* Wishlist */}
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/wishlist">
                 <Heart className="h-5 w-5" />
                 <span className="sr-only">Wishlist</span>
@@ -196,7 +234,7 @@ export function Header({ className }: HeaderProps) {
             </Button>
 
             {/* Cart */}
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/cart">
                 <ShoppingCart className="h-5 w-5" />
                 <span className="sr-only">Cart</span>
@@ -212,10 +250,10 @@ export function Header({ className }: HeaderProps) {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="relative">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.profile?.avatar} alt={user?.name} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {user?.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -223,20 +261,18 @@ export function Header({ className }: HeaderProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user?.name}</p>
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user?.name}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/account">Account</Link>
+                    <Link href="/account">Account Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/orders">Orders</Link>
+                    <Link href="/orders">My Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/wishlist">Wishlist</Link>
@@ -245,7 +281,7 @@ export function Header({ className }: HeaderProps) {
                     <Link href="/addresses">Addresses</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -281,44 +317,89 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Eye className="h-6 w-6 text-primary" />
+        <div className="flex items-center space-x-3">
+          <Eye className="h-8 w-8 text-primary" />
           <div className="flex flex-col leading-tight">
             <span className="text-lg font-bold gradient-text font-heading">Pradeep</span>
             <span className="text-lg font-bold gradient-text font-heading">Opticals</span>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </Button>
       </div>
-      
-      <nav className="flex flex-col space-y-2">
-        <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
-          Products
+
+      <Separator />
+
+      {/* Search */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Search</label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search for glasses, frames, lenses..."
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Navigation */}
+      <nav className="space-y-1">
+        <div className="text-sm font-medium text-muted-foreground mb-2">Shop</div>
+        <Link href="/products" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          All Products
         </Link>
-        <Link href="/categories" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
-          Categories
+        <Link href="/products/prescription-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Prescription Glasses
         </Link>
-        <Link href="/brands" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
+        <Link href="/products/sunglasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Sunglasses
+        </Link>
+        <Link href="/products/reading-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Reading Glasses
+        </Link>
+        <Link href="/products/computer-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Computer Glasses
+        </Link>
+        <Link href="/brands" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
           Brands
         </Link>
-        <Link href="/sale" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
+        <Link href="/sale" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
           Sale
-        </Link>
-        <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
-          About
         </Link>
       </nav>
 
+      <Separator />
+
+      {/* Company */}
+      <nav className="space-y-1">
+        <div className="text-sm font-medium text-muted-foreground mb-2">Company</div>
+        <Link href="/about" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          About Us
+        </Link>
+        <Link href="/contact" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Contact
+        </Link>
+        <Link href="/help" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Help Center
+        </Link>
+      </nav>
+
+      <Separator />
+
+      {/* User Section */}
       {isAuthenticated ? (
-        <div className="border-t pt-4">
-          <div className="flex items-center space-x-3 mb-4">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={user?.profile?.avatar} alt={user?.name} />
-              <AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -327,30 +408,30 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
               <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <div className="flex flex-col space-y-2">
-            <Link href="/account" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
-              Account
+          <div className="space-y-1">
+            <Link href="/account" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+              Account Settings
             </Link>
-            <Link href="/orders" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
-              Orders
+            <Link href="/orders" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+              My Orders
             </Link>
-            <Link href="/wishlist" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
+            <Link href="/wishlist" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
               Wishlist
             </Link>
-            <Link href="/addresses" className="text-sm font-medium hover:text-primary transition-colors" onClick={onClose}>
+            <Link href="/addresses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
               Addresses
             </Link>
-            <Button variant="ghost" className="justify-start p-0 h-auto" onClick={handleLogout}>
+            <Button variant="ghost" className="justify-start p-0 h-auto text-destructive hover:text-destructive" onClick={handleLogout}>
               Log out
             </Button>
           </div>
         </div>
       ) : (
-        <div className="border-t pt-4 flex flex-col space-y-2">
-          <Button variant="outline" asChild onClick={onClose}>
+        <div className="space-y-3">
+          <Button variant="outline" asChild className="w-full" onClick={onClose}>
             <Link href="/auth/login">Sign In</Link>
           </Button>
-          <Button asChild onClick={onClose}>
+          <Button asChild className="w-full" onClick={onClose}>
             <Link href="/auth/register">Sign Up</Link>
           </Button>
         </div>
