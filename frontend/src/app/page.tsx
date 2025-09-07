@@ -17,7 +17,7 @@ export default function Home() {
               <div className="space-y-4">
                 <Badge variant="secondary" className="w-fit">
                   <Sparkles className="h-4 w-4 mr-2" />
-                  New Collection 2024
+                  New Collection {new Date().getFullYear()}
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight font-heading">
                   Discover Your
