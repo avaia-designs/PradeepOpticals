@@ -79,7 +79,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <Link href={`/products/${product.id}`}>
         <div className="relative aspect-square overflow-hidden">
           <Image
-            src={product.imageUrl}
+            src={product.imageUrl || "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&h=400&fit=crop&crop=center"}
             alt={product.name}
             fill
             className={cn(

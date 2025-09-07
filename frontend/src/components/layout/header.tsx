@@ -103,10 +103,11 @@ export function Header({ className }: HeaderProps) {
           </Sheet>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2">
-              <Eye className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold gradient-text">Pradeep Opticals</span>
+          <Link href="/" className="flex items-center space-x-3">
+            <Eye className="h-10 w-10 text-primary" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-xl font-bold gradient-text font-heading">Pradeep</span>
+              <span className="text-xl font-bold gradient-text font-heading">Opticals</span>
             </div>
           </Link>
 
@@ -282,7 +283,13 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Menu</h2>
+        <div className="flex items-center space-x-2">
+          <Eye className="h-6 w-6 text-primary" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-lg font-bold gradient-text font-heading">Pradeep</span>
+            <span className="text-lg font-bold gradient-text font-heading">Opticals</span>
+          </div>
+        </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>

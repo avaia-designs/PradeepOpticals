@@ -19,7 +19,7 @@ export default function Home() {
                   <Sparkles className="h-4 w-4 mr-2" />
                   New Collection 2024
                 </Badge>
-                <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
+                <h1 className="text-4xl lg:text-6xl font-bold tracking-tight font-heading">
                   Discover Your
                   <span className="gradient-text block">Perfect Vision</span>
                 </h1>
@@ -61,7 +61,7 @@ export default function Home() {
             <div className="relative">
               <div className="relative w-full h-96 lg:h-[500px] rounded-2xl overflow-hidden">
                 <Image
-                  src="/hero-eyewear.jpg"
+                  src="https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800&h=600&fit=crop&crop=center"
                   alt="Premium eyewear collection"
                   fill
                   className="object-cover"
@@ -107,7 +107,7 @@ export default function Home() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Why Choose Pradeep Opticals?</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-heading">Why Choose Pradeep Opticals?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               We're committed to providing you with the best eyewear experience, 
               combining quality, style, and exceptional service.
@@ -120,7 +120,7 @@ export default function Home() {
                 <div className="p-4 bg-primary/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <Eye className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Expert Eye Care</h3>
+                <h3 className="text-xl font-semibold mb-2 font-heading">Expert Eye Care</h3>
                 <p className="text-muted-foreground">
                   Professional eye examinations and personalized recommendations from certified optometrists.
                 </p>
@@ -132,7 +132,7 @@ export default function Home() {
                 <div className="p-4 bg-success/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <Shield className="h-8 w-8 text-success" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Quality Guarantee</h3>
+                <h3 className="text-xl font-semibold mb-2 font-heading">Quality Guarantee</h3>
                 <p className="text-muted-foreground">
                   Premium materials and craftsmanship with a comprehensive warranty on all our products.
                 </p>
@@ -144,7 +144,7 @@ export default function Home() {
                 <div className="p-4 bg-warning/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <Truck className="h-8 w-8 text-warning" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
+                <h3 className="text-xl font-semibold mb-2 font-heading">Fast Delivery</h3>
                 <p className="text-muted-foreground">
                   Quick and secure shipping with tracking and insurance on all orders.
                 </p>
@@ -156,7 +156,7 @@ export default function Home() {
                 <div className="p-4 bg-info/10 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <Headphones className="h-8 w-8 text-info" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
+                <h3 className="text-xl font-semibold mb-2 font-heading">24/7 Support</h3>
                 <p className="text-muted-foreground">
                   Round-the-clock customer service to help you with any questions or concerns.
                 </p>
@@ -170,7 +170,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Shop by Category</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-heading">Shop by Category</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Explore our diverse collection of eyewear categories, 
               each carefully curated to meet your specific needs and style preferences.
@@ -182,37 +182,37 @@ export default function Home() {
               {
                 title: "Prescription Glasses",
                 description: "Clear vision with style",
-                image: "/category-prescription.jpg",
+                image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/prescription-glasses"
               },
               {
                 title: "Sunglasses",
                 description: "Protect your eyes in style",
-                image: "/category-sunglasses.jpg",
+                image: "https://images.unsplash.com/photo-1511499767150-a48a237f0c44?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/sunglasses"
               },
               {
                 title: "Reading Glasses",
                 description: "Perfect for close-up work",
-                image: "/category-reading.jpg",
+                image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/reading-glasses"
               },
               {
                 title: "Computer Glasses",
                 description: "Reduce digital eye strain",
-                image: "/category-computer.jpg",
+                image: "https://images.unsplash.com/photo-1506629905607-1a0b0a0b0b0b?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/computer-glasses"
               },
               {
                 title: "Progressive Lenses",
                 description: "Seamless vision at all distances",
-                image: "/category-progressive.jpg",
+                image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/progressive-lenses"
               },
               {
                 title: "Kids Eyewear",
                 description: "Durable and fun frames",
-                image: "/category-kids.jpg",
+                image: "https://images.unsplash.com/photo-1511499767150-a48a237f0c44?w=600&h=400&fit=crop&crop=center",
                 href: "/categories/kids-eyewear"
               }
             ].map((category, index) => (
@@ -226,7 +226,7 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h3 className="text-xl font-semibold mb-1">{category.title}</h3>
+                    <h3 className="text-xl font-semibold mb-1 font-heading">{category.title}</h3>
                     <p className="text-sm opacity-90">{category.description}</p>
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+          <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-heading">
             Ready to Find Your Perfect Pair?
           </h2>
           <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">

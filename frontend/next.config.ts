@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         hostname: 'pradeep-opticals.com',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },  
     ],
   },
   env: {

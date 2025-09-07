@@ -117,7 +117,6 @@
   }
   
   html {
-    font-family: var(--font-sans);
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
     -moz-tab-size: 4;
@@ -128,7 +127,6 @@
     margin: 0;
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -169,7 +167,7 @@
   
   /* Typography improvements */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
     font-weight: 600;
     line-height: 1.25;
     letter-spacing: -0.025em;
@@ -177,7 +175,7 @@
   
   /* Logo and brand text */
   .logo, .brand-text {
-    font-family: var(--font-heading);
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.025em;
   }
@@ -304,15 +302,15 @@
   
   /* Font family utilities */
   .font-heading {
-    font-family: var(--font-heading);
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   }
   
   .font-body {
-    font-family: var(--font-sans);
+    font-family: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
   
   .font-logo {
-    font-family: var(--font-heading);
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.025em;
   }
