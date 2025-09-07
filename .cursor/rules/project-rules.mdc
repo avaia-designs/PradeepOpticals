@@ -1,0 +1,450 @@
+---
+description: Pradeep Opticals - Project structure guidelines
+globs: Project structure
+alwaysApply: true
+---
+# Project Guidelines
+
+## Technology Stack Overview
+
+This project uses a modern full-stack architecture optimized for e-commerce applications with the following technologies:
+
+- **Database**: MongoDB with Mongoose ODM
+- **Backend Runtime**: Bun (high-performance JavaScript runtime)
+- **Backend Framework**: Express.js with TypeScript
+- **Frontend**: React.js with TypeScript (NOT Next.js)
+- **UI Components**: Shadcn/ui component library
+- **File Storage**: MinIO (S3-compatible object storage)
+- **Containerization**: Docker with lightweight optimized images
+
+## Project Structure
+
+```
+project-root/
+├── backend/                 # Express.js + TypeScript backend
+│   ├── src/
+│   │   ├── models/         # Mongoose schema models
+│   │   ├── routes/         # API route handlers
+│   │   ├── controllers/    # Request controllers
+│   │   ├── services/       # Business logic layer
+│   │   ├── middleware/     # Custom middleware
+│   │   ├── utils/          # Utility functions
+│   │   └── types/          # TypeScript type definitions
+│   ├── package.json        # Backend dependencies
+│   ├── tsconfig.json       # TypeScript configuration
+│   └── sample.env          # Environment variables template
+├── frontend/               # React.js + TypeScript frontend
+│   ├── src/
+│   │   ├── components/     # React components (Shadcn/ui based)
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API service layer
+│   │   ├── stores/         # State management
+│   │   ├── types/          # TypeScript interfaces
+│   │   └── utils/          # Frontend utilities
+│   ├── package.json        # Frontend dependencies
+│   ├── tsconfig.json       # TypeScript configuration
+│   └── sample.env          # Environment variables template
+├── docker-compose.yml      # Docker services configuration
+└── README.md              # Project documentation
+```
+
+## Backend Requirements
+
+### 1. Runtime and Framework
+- **MUST** use Bun as the JavaScript runtime for optimal performance
+- **MUST** use Express.js with TypeScript for the web framework
+- **MUST** follow the backend architecture ruleset strictly
+
+### 2. Database and Models
+- **MUST** use MongoDB with Mongoose ODM
+- **MUST** implement all schema models in TypeScript with proper interfaces
+- **MUST** include `createdAt` and `modifiedAt` timestamps in ALL models
+- **MUST** use proper schema validation and indexing
+
+#### Required Model Structure Template:
+```typescript
+// Base interface that all models must extend
+interface BaseModel {
+  _id: mongoose.Types.ObjectId;
+  createdAt: Date;
+  modifiedAt: Date;
+}
+
+// Example User model implementation
+interface IUser extends BaseModel {
+  email: string;
+  password: string;
+  name: string;
+  role: 'user' | 'admin';
+  profile: {
+    avatar?: string;
+    phone?: string;
+    dateOfBirth?: Date;
+  };
+  isActive: boolean;
+}
+
+const userSchema = new mongoose.Schema<IUser>({
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  profile: {
+    avatar: String,
+    phone: String,
+    dateOfBirth: Date,
+  },
+  isActive: { type: Boolean, default: true },
+}, {
+  timestamps: { createdAt: 'createdAt', updatedAt: 'modifiedAt' }, // Auto-manage timestamps
+  versionKey: false, // Remove __v field
+});
+
+export const User = mongoose.model<IUser>('User', userSchema);
+```
+
+### 3. Environment Configuration
+- **MUST** maintain `backend/sample.env` file with all required environment variables
+- **MUST** document each environment variable with comments
+
+#### Required backend/sample.env:
+```env
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/ecommerce_db
+MONGODB_TEST_URI=mongodb://localhost:27017/ecommerce_test_db
+
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+API_VERSION=v1
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+JWT_EXPIRES_IN=7d
+
+# MinIO Configuration (S3-compatible storage)
+MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+MINIO_BUCKET_NAME=ecommerce-uploads
+MINIO_USE_SSL=false
+
+# CORS Configuration
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# File Upload Configuration
+MAX_FILE_SIZE=5242880  # 5MB in bytes
+ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Logging
+LOG_LEVEL=debug
+LOG_FILE_PATH=./logs/app.log
+```
+
+## Frontend Requirements
+
+### 1. Framework and UI
+- **MUST** use React.js with TypeScript (NOT Next.js)
+- **MUST** use Shadcn/ui for ALL UI components
+- **MUST** follow the frontend architecture ruleset strictly
+- **MUST** implement proper responsive design for e-commerce UX
+
+### 2. State Management and Routing
+- **MUST** use React Router v6+ for client-side routing
+- **MUST** implement proper state management (Zustand or Redux Toolkit)
+- **MUST** follow the specified data flow architecture
+
+### 3. Environment Configuration
+- **MUST** maintain `frontend/sample.env` file with all required environment variables
+
+#### Required frontend/sample.env:
+```env
+# API Configuration
+REACT_APP_API_BASE_URL=http://localhost:5000/api/v1
+REACT_APP_API_TIMEOUT=10000
+
+# Authentication
+REACT_APP_TOKEN_STORAGE_KEY=ecommerce_auth_token
+REACT_APP_USER_STORAGE_KEY=ecommerce_user_data
+
+# File Upload Configuration
+REACT_APP_MAX_FILE_SIZE=5242880  # 5MB in bytes
+REACT_APP_ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp
+REACT_APP_UPLOAD_ENDPOINT=/upload
+
+# UI Configuration
+REACT_APP_ITEMS_PER_PAGE=12
+REACT_APP_SEARCH_DEBOUNCE_MS=500
+
+# Feature Flags
+REACT_APP_ENABLE_DARK_MODE=true
+REACT_APP_ENABLE_ANALYTICS=false
+REACT_APP_ENABLE_LIVE_CHAT=false
+
+# Third-party Services (if needed)
+REACT_APP_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
+
+# Development
+REACT_APP_DEBUG_MODE=true
+REACT_APP_MOCK_API=false
+```
+
+## Docker Configuration
+
+### 1. Docker Compose Requirements
+- **MUST** use lightweight, optimized Docker images
+- **MUST** configure MinIO for S3-compatible file storage
+- **MUST** set up MongoDB with proper data persistence
+- **MUST** include development-friendly configurations
+
+#### Required docker-compose.yml:
+```yaml
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7-jammy  # Lightweight Ubuntu-based MongoDB
+    container_name: ecommerce_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: ecommerce_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb-init:/docker-entrypoint-initdb.d  # Optional: init scripts
+    networks:
+      - ecommerce_network
+
+  # MinIO S3-compatible Object Storage
+  minio:
+    image: minio/minio:latest  # Official lightweight MinIO image
+    container_name: ecommerce_minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"    # MinIO API
+      - "9001:9001"    # MinIO Console UI
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Redis (Optional - for caching and sessions)
+  redis:
+    image: redis:7-alpine  # Lightweight Alpine-based Redis
+    container_name: ecommerce_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecommerce_network
+    command: redis-server --appendonly yes  # Enable data persistence
+
+# Persistent Data Volumes
+volumes:
+  mongodb_data:
+    driver: local
+  minio_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Network Configuration
+networks:
+  ecommerce_network:
+    driver: bridge
+```
+
+## Package Management
+
+### 1. Backend Package.json Requirements
+- **MUST** use Bun for package management and runtime
+- **MUST** include all necessary TypeScript and development dependencies
+
+#### Required backend/package.json scripts:
+```json
+{
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist --target node",
+    "start": "bun dist/index.js",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit"
+  }
+}
+```
+
+### 2. Frontend Package.json Requirements
+- **MUST** include React, TypeScript, and Shadcn/ui dependencies
+- **MUST** use proper build and development scripts
+
+#### Required frontend/package.json scripts:
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "type-check": "tsc --noEmit"
+  }
+}
+```
+
+## MinIO Configuration
+
+### 1. Setup Requirements
+- **MUST** use MinIO as S3-compatible object storage for local development
+- **MUST** implement proper file upload middleware in backend
+- **MUST** create appropriate buckets and policies for file organization
+
+### 2. MinIO Bucket Structure
+```
+ecommerce-uploads/
+├── products/           # Product images and media
+├── users/             # User profile pictures
+├── categories/        # Category images
+├── temp/             # Temporary uploads before processing
+└── documents/        # Order receipts, invoices, etc.
+```
+
+### 3. File Upload Implementation
+- **MUST** implement file validation (type, size, extension)
+- **MUST** generate unique file names to prevent conflicts
+- **MUST** implement proper error handling for upload failures
+- **MUST** support multiple file uploads with progress tracking
+
+## TypeScript Configuration
+
+### 1. Strict Type Safety
+- **MUST** use strict TypeScript configuration for both frontend and backend
+- **MUST** define proper interfaces for ALL data structures
+- **MUST** avoid using `any` type under any circumstances
+
+### 2. Required tsconfig.json (Backend):
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "allowJs": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["bun-types", "node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
+```
+
+## Development Workflow
+
+### 1. Environment Setup
+1. Clone the repository
+2. Copy `sample.env` files to `.env` in respective directories
+3. Run `docker-compose up -d` to start services
+4. Install dependencies with `bun install` in both directories
+5. Start development servers
+
+### 2. Development Commands
+```bash
+# Start Docker services
+docker-compose up -d
+
+# Backend development
+cd backend
+bun install
+bun dev
+
+# Frontend development (in new terminal)
+cd frontend
+npm install  # or bun install
+npm run dev
+
+# Access services
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:5000
+# - MinIO Console: http://localhost:9001
+# - MongoDB: localhost:27017
+```
+
+## Code Quality Requirements
+
+### 1. Linting and Formatting
+- **MUST** use ESLint with TypeScript rules
+- **MUST** use Prettier for code formatting
+- **MUST** implement pre-commit hooks for code quality
+
+### 2. Testing Requirements
+- **MUST** write unit tests for all business logic
+- **MUST** implement integration tests for API endpoints
+- **MUST** test React components with React Testing Library
+- **MUST** maintain minimum 80% code coverage
+
+### 3. Documentation
+- **MUST** document all API endpoints with proper request/response examples
+- **MUST** include meaningful comments for complex business logic only
+- **MUST** maintain up-to-date README files for both frontend and backend
+
+## Performance Optimization
+
+### 1. Backend Optimization
+- **MUST** implement proper MongoDB indexing
+- **MUST** use connection pooling for database connections
+- **MUST** implement response caching where appropriate
+- **MUST** use compression middleware for API responses
+
+### 2. Frontend Optimization
+- **MUST** implement code splitting for routes
+- **MUST** use lazy loading for images and components
+- **MUST** implement proper state management to avoid unnecessary re-renders
+- **MUST** optimize bundle size and remove unused dependencies
+
+---
+
+## Enforcement
+
+- **ALL** guidelines are mandatory for project consistency
+- **CODE REVIEWS** must verify adherence to these guidelines
+- **AUTOMATED TESTING** must pass before any code merge
+- **ENVIRONMENT FILES** must never be committed to version control
+- **DOCKER SERVICES** must be used for local development

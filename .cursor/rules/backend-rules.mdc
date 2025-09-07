@@ -1,0 +1,485 @@
+---
+description: Pradeep Opticals - Backend code guidelines
+globs: Code Guidelines for the backend
+alwaysApply: true
+---
+
+# Bacend Architecture Ruleset
+
+## Architecture Flow
+All requests must follow this exact flow pattern:
+```
+Request → Routes → Middleware → Controller → Validation → Service → Repository → Database
+                                     ↓
+Response ← Routes ← Middleware ← Controller ← Service ← Repository ← Database
+```
+
+## 1. Routes Layer Rules
+
+### 1.1 Route Definition
+- **MUST** define routes in dedicated route files grouped by resource
+- **MUST** use RESTful conventions: `GET /users`, `POST /users`, `PUT /users/:id`, `DELETE /users/:id`
+- **MUST** apply middleware at route level, not globally unless absolutely necessary
+- **MUST** use descriptive route names and consistent URL patterns
+
+### 1.2 Route Structure
+```typescript
+// ✅ Correct
+router.get('/users/:id', authenticate, authorize('user:read'), getUserController);
+
+// ❌ Incorrect - no middleware chain
+router.get('/users/:id', getUserController);
+```
+
+### 1.3 Route Grouping
+- **MUST** group related routes in separate files: `userRoutes.ts`, `orderRoutes.ts`
+- **MUST** use route prefixes for versioning: `/api/v1/users`
+
+## 2. Middleware Layer Rules
+
+### 2.1 Middleware Types and Order
+1. **Security middleware** (helmet, cors) - FIRST
+2. **Request parsing** (body-parser, multipart) 
+3. **Authentication** (JWT validation)
+4. **User resolver** (populate user from token)
+5. **Authorization** (role/permission checks)
+6. **Validation** (request validation)
+7. **Rate limiting**
+8. **Logging** - LAST before controller
+
+### 2.2 User Resolver Middleware
+- **MUST** implement `userResolver` middleware to extract user from request
+- **MUST** attach user to request object: `req.user`
+- **MUST** handle authentication failures with proper error codes
+
+```typescript
+// ✅ Required user resolver pattern
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    permissions: string[];
+  };
+}
+```
+
+### 2.3 File Upload Middleware (MinIO)
+- **MUST** use MinIO for local development in Docker container
+- **MUST** implement proper file validation (size, type, extension)
+- **MUST** generate unique file names with proper extensions
+- **MUST** handle upload errors gracefully
+
+```typescript
+// ✅ Required MinIO configuration for local development
+const minioConfig = {
+  endPoint: 'localhost',
+  port: 9000,
+  useSSL: false,
+  accessKey: process.env.MINIO_ACCESS_KEY,
+  secretKey: process.env.MINIO_SECRET_KEY
+};
+```
+
+### 2.4 Error Handling Middleware
+- **MUST** be the last middleware in the chain
+- **MUST** return consistent error format
+- **MUST** log errors with correlation IDs
+
+## 3. Controller Layer Rules
+
+### 3.1 Controller Responsibilities
+- **MUST** handle HTTP request/response only
+- **MUST NOT** contain business logic
+- **MUST** delegate to service layer
+- **MUST** not send confidential information to the frontend
+- **MUST** return consistent response format
+
+### 3.2 Controller Structure
+```typescript
+// ✅ Correct controller pattern
+export const getUserController = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    const user = await userService.getUserById(userId, req.user);
+    
+    return res.status(200).json({
+      success: true,
+      data: user,
+      message: 'User retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+```
+
+### 3.3 Response Format
+- **MUST** use consistent response structure for all endpoints
+- **MUST** include appropriate HTTP status codes
+
+## 4. Validation Layer Rules
+
+### 4.1 Input Validation
+- **MUST** validate all incoming data before processing
+- **MUST** use schema validation libraries (Joi, Zod, Yup)
+- **MUST** validate request body, query params, and URL parameters
+- **MUST** sanitize inputs to prevent injection attacks
+
+### 4.2 Validation Implementation
+```typescript
+// ✅ Required validation middleware pattern
+export const validateCreateUser = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().min(8).required(),
+    name: Joi.string().min(2).max(50).required()
+  });
+  
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      error: 'VALIDATION_ERROR',
+      message: error.details[0].message
+    });
+  }
+  next();
+};
+```
+
+### 4.3 Type Safety
+- **MUST** use proper TypeScript interfaces for all data structures
+- **MUST NOT** use `any` type
+- **MUST** define strict types for request/response objects
+
+## 5. Service Layer Rules
+
+### 5.1 Business Logic
+- **MUST** contain all business logic and workflows
+- **MUST** orchestrate repository calls
+- **MUST** handle business rule validation
+- **MUST** manage transactions when needed
+
+### 5.2 Service Structure
+```typescript
+// ✅ Correct service pattern
+export class UserService {
+  constructor(
+    private userRepository: UserRepository,
+    private emailService: EmailService
+  ) {}
+
+  async createUser(userData: CreateUserDto, requestingUser: AuthenticatedUser): Promise<User> {
+    // Business logic here
+    const existingUser = await this.userRepository.findByEmail(userData.email);
+    if (existingUser) {
+      throw new ConflictError('User already exists');
+    }
+
+    const hashedPassword = await hashPassword(userData.password);
+    const newUser = await this.userRepository.create({
+      ...userData,
+      password: hashedPassword
+    });
+
+    // Send welcome email (side effect)
+    await this.emailService.sendWelcomeEmail(newUser.email);
+
+    return newUser;
+  }
+}
+```
+
+### 5.3 Error Handling
+- **MUST** throw custom error classes with appropriate HTTP status codes
+- **MUST** provide meaningful error messages
+- **MUST** log business logic errors
+
+## 6. Repository Layer Rules
+
+### 6.1 Data Access Abstraction
+- **MUST** abstract all database operations
+- **MUST** implement repository pattern interfaces
+- **MUST** handle database-specific errors
+- **MUST NOT** contain business logic
+
+### 6.2 MongoDB Query Optimization
+- **MUST** use indexes for all frequently queried fields
+- **MUST** use aggregation pipelines for complex queries
+- **MUST** implement proper pagination with `limit()` and `skip()`
+- **MUST** use projection to limit returned fields
+- **MUST** use `lean()` queries when possible for better performance
+
+```typescript
+// ✅ Optimized MongoDB repository pattern
+export class UserRepository {
+  async findById(id: string): Promise<User | null> {
+    return User.findById(id)
+      .select('-password -__v') // Exclude sensitive fields
+      .lean() // Return plain objects for better performance
+      .exec();
+  }
+
+  async findWithPagination(page: number, limit: number, filter: FilterOptions): Promise<PaginatedResult<User>> {
+    const skip = (page - 1) * limit;
+    
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password -__v')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      User.countDocuments(filter).exec()
+    ]);
+
+    return {
+      data: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+}
+```
+
+### 6.3 Database Schema Optimization
+- **MUST** create compound indexes for multi-field queries
+- **MUST** use appropriate data types for fields
+- **MUST** implement proper relationships (refs vs embedded)
+- **MUST** set up TTL indexes for temporary data
+
+```typescript
+// ✅ Optimized schema example
+const userSchema = new Schema({
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    index: true,
+    lowercase: true 
+  },
+  password: { type: String, required: true },
+  profile: {
+    name: { type: String, required: true },
+    avatar: { type: String },
+    preferences: {
+      theme: { type: String, enum: ['light', 'dark'], default: 'light' }
+    }
+  },
+  role: { type: String, enum: ['user', 'admin'], default: 'user', index: true },
+  isActive: { type: Boolean, default: true, index: true },
+  lastLoginAt: { type: Date },
+  createdAt: { type: Date, default: Date.now, index: true },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Compound indexes
+userSchema.index({ email: 1, isActive: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+```
+
+## 7. Database Layer Rules
+
+### 7.1 Connection Management
+- **MUST** use connection pooling
+- **MUST** implement proper connection error handling
+- **MUST** close connections gracefully on application shutdown
+
+### 7.2 Transaction Management
+- **MUST** use transactions for operations affecting multiple collections
+- **MUST** implement proper rollback mechanisms
+- **MUST** handle transaction timeouts
+
+## 8. Response Format Standards
+
+### 8.1 Success Response
+```typescript
+interface SuccessResponse<T> {
+  success: true;
+  data: T;
+  message: string;
+  meta?: {
+    pagination?: PaginationMeta;
+    timestamp?: string;
+  };
+}
+```
+
+### 8.2 Error Response
+```typescript
+interface ErrorResponse {
+  success: false;
+  error: string; // Error code
+  message: string; // Human readable message
+  details?: Record<string, any>; // Additional error context
+  stack?: string; // Only in development
+}
+```
+
+### 8.3 HTTP Status Codes
+- **200** - OK (successful GET, PUT)
+- **201** - Created (successful POST)
+- **204** - No Content (successful DELETE)
+- **400** - Bad Request (validation errors)
+- **401** - Unauthorized (authentication required)
+- **403** - Forbidden (insufficient permissions)
+- **404** - Not Found (resource doesn't exist)
+- **409** - Conflict (duplicate resource)
+- **429** - Too Many Requests (rate limit exceeded)
+- **500** - Internal Server Error (unexpected errors)
+
+## 9. Logging Rules
+
+### 9.1 Log Levels
+- **ERROR** - System errors, exceptions
+- **WARN** - Performance issues, deprecated usage
+- **INFO** - Important business events, user actions
+- **DEBUG** - Detailed execution flow (development only)
+
+### 9.2 Log Format
+```typescript
+// ✅ Required log structure
+{
+  timestamp: '2024-01-01T12:00:00Z',
+  level: 'INFO',
+  message: 'User created successfully',
+  correlationId: 'req-123456',
+  userId: 'user-789',
+  action: 'CREATE_USER',
+  duration: 150, // milliseconds
+  metadata: {
+    email: 'user@example.com',
+    ip: '192.168.1.1'
+  }
+}
+```
+
+### 9.3 Logging Placement
+- **MUST** log at controller entry/exit points
+- **MUST** log service layer business operations
+- **MUST** log repository database operations
+- **MUST** log all errors with stack traces
+- **MUST NOT** log sensitive information (passwords, tokens)
+
+## 10. Comment Rules
+
+### 10.1 Meaningful Comments Only
+- **MUST** comment complex business logic
+- **MUST** comment non-obvious algorithms or calculations
+- **MUST** comment workarounds or temporary solutions
+- **MUST NOT** comment obvious code
+- **MUST NOT** leave TODO comments in production code
+
+### 10.2 Comment Format
+```typescript
+// ✅ Good comments
+/**
+ * Calculates user credit score based on payment history and account age
+ * Algorithm based on FICO scoring model requirements
+ */
+private calculateCreditScore(user: User): number {
+  // Weight recent payments more heavily (80% of score)
+  const paymentScore = this.calculatePaymentScore(user.payments);
+  
+  // Account age contributes 20% to final score
+  const ageScore = this.calculateAccountAgeScore(user.createdAt);
+  
+  return Math.round(paymentScore * 0.8 + ageScore * 0.2);
+}
+```
+
+## 11. Type Safety Rules
+
+### 11.1 Strict Typing
+- **MUST** use `strict: true` in TypeScript configuration
+- **MUST** define interfaces for all data structures
+- **MUST** use generic types where appropriate
+- **MUST NOT** use `any` type under any circumstances
+
+### 11.2 Required Type Definitions
+```typescript
+// ✅ Required interface patterns
+interface CreateUserDto {
+  email: string;
+  password: string;
+  name: string;
+  role?: UserRole;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PaginatedResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+```
+
+## 12. Docker & MinIO Configuration
+
+### 12.1 Local Development Setup
+```yaml
+# docker-compose.yml - Required MinIO configuration
+version: '3.8'
+services:
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  minio_data:
+```
+
+### 12.2 File Upload Implementation
+```typescript
+// ✅ Required file upload middleware
+export const uploadMiddleware = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 5 // Maximum 5 files
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+```
+
+---
+
+## Enforcement
+- **ALL** rules are mandatory and must be followed
+- **CODE REVIEWS** must verify adherence to these rules
+- **AUTOMATED TESTS** must cover all layers
+- **LINTING** must enforce TypeScript strict mode and prevent `any` usage
