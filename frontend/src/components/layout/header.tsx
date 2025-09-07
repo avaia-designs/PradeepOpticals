@@ -67,9 +67,9 @@ export function Header({ className }: HeaderProps) {
   };
 
   return (
-    <header className={cn('sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b', className)}>
+    <header className={cn('sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b shadow-sm', className)}>
       {/* Top Bar */}
-      <div className="hidden lg:block border-b bg-muted/30">
+      <div className="hidden lg:block border-b bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-2 text-sm">
             <div className="flex items-center space-x-6">
@@ -184,7 +184,7 @@ export function Header({ className }: HeaderProps) {
               
               {/* Search Suggestions Dropdown */}
               {isSearchOpen && (searchQuery || suggestions.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                   {isSuggestionsLoading ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
                       Loading suggestions...
@@ -194,7 +194,7 @@ export function Header({ className }: HeaderProps) {
                       {suggestions.map((suggestion, index) => (
                         <button
                           key={index}
-                          className="w-full px-4 py-3 text-left text-sm hover:bg-muted transition-colors flex items-center space-x-2"
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-gray-100 transition-colors flex items-center space-x-2"
                           onClick={() => handleSuggestionClick(suggestion)}
                         >
                           <Search className="h-4 w-4 text-muted-foreground" />

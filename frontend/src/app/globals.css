@@ -1,33 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core color palette using modern color space */
+  /* Light theme color palette */
   --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.09 0.005 296.79);
+  --color-foreground: oklch(0.15 0.005 296.79);
   --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.09 0.005 296.79);
+  --color-card-foreground: oklch(0.15 0.005 296.79);
   --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.09 0.005 296.79);
-  --color-primary: oklch(0.6 0.196 264.05);
+  --color-popover-foreground: oklch(0.15 0.005 296.79);
+  --color-primary: oklch(0.55 0.22 264.05);
   --color-primary-foreground: oklch(0.98 0.005 296.79);
-  --color-secondary: oklch(0.96 0.005 296.79);
-  --color-secondary-foreground: oklch(0.09 0.005 296.79);
-  --color-muted: oklch(0.96 0.005 296.79);
-  --color-muted-foreground: oklch(0.46 0.005 296.79);
-  --color-accent: oklch(0.96 0.005 296.79);
-  --color-accent-foreground: oklch(0.09 0.005 296.79);
-  --color-destructive: oklch(0.6 0.196 25.33);
+  --color-secondary: oklch(0.96 0.01 296.79);
+  --color-secondary-foreground: oklch(0.15 0.005 296.79);
+  --color-muted: oklch(0.96 0.01 296.79);
+  --color-muted-foreground: oklch(0.45 0.01 296.79);
+  --color-accent: oklch(0.96 0.01 296.79);
+  --color-accent-foreground: oklch(0.15 0.005 296.79);
+  --color-destructive: oklch(0.55 0.22 25.33);
   --color-destructive-foreground: oklch(0.98 0.005 296.79);
-  --color-border: oklch(0.91 0.005 296.79);
-  --color-input: oklch(0.91 0.005 296.79);
-  --color-ring: oklch(0.6 0.196 264.05);
+  --color-border: oklch(0.89 0.01 296.79);
+  --color-input: oklch(0.89 0.01 296.79);
+  --color-ring: oklch(0.55 0.22 264.05);
   
-  /* E-commerce specific colors */
-  --color-success: oklch(0.6 0.196 142.1);
+  /* E-commerce specific colors - light theme */
+  --color-success: oklch(0.55 0.22 142.1);
   --color-success-foreground: oklch(0.98 0.005 296.79);
-  --color-warning: oklch(0.6 0.196 38);
+  --color-warning: oklch(0.55 0.22 38);
   --color-warning-foreground: oklch(0.98 0.005 296.79);
-  --color-info: oklch(0.6 0.196 199.4);
+  --color-info: oklch(0.55 0.22 199.4);
   --color-info-foreground: oklch(0.98 0.005 296.79);
   
   /* Border radius */
@@ -77,38 +77,7 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode theme */
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: oklch(0.09 0.005 296.79);
-    --color-foreground: oklch(0.98 0.005 296.79);
-    --color-card: oklch(0.09 0.005 296.79);
-    --color-card-foreground: oklch(0.98 0.005 296.79);
-    --color-popover: oklch(0.09 0.005 296.79);
-    --color-popover-foreground: oklch(0.98 0.005 296.79);
-    --color-primary: oklch(0.7 0.196 264.05);
-    --color-primary-foreground: oklch(0.09 0.005 296.79);
-    --color-secondary: oklch(0.18 0.005 296.79);
-    --color-secondary-foreground: oklch(0.98 0.005 296.79);
-    --color-muted: oklch(0.18 0.005 296.79);
-    --color-muted-foreground: oklch(0.65 0.005 296.79);
-    --color-accent: oklch(0.18 0.005 296.79);
-    --color-accent-foreground: oklch(0.98 0.005 296.79);
-    --color-destructive: oklch(0.6 0.196 25.33);
-    --color-destructive-foreground: oklch(0.98 0.005 296.79);
-    --color-border: oklch(0.18 0.005 296.79);
-    --color-input: oklch(0.18 0.005 296.79);
-    --color-ring: oklch(0.94 0.005 296.79);
-    
-    /* E-commerce specific colors - dark mode */
-    --color-success: oklch(0.7 0.196 142.1);
-    --color-success-foreground: oklch(0.09 0.005 296.79);
-    --color-warning: oklch(0.6 0.196 38);
-    --color-warning-foreground: oklch(0.98 0.005 296.79);
-    --color-info: oklch(0.6 0.196 199.4);
-    --color-info-foreground: oklch(0.98 0.005 296.79);
-  }
-}
+/* Light theme only - no dark mode */
 
 /* Base styles using utility classes approach */
 @layer base {
@@ -250,16 +219,10 @@
   }
   
   .glass-effect {
-    background-color: oklch(from white l c h / 0.8);
+    background-color: oklch(from white l c h / 0.9);
     backdrop-filter: blur(8px);
-    border: 1px solid oklch(from white l c h / 0.2);
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    .glass-effect {
-      background-color: oklch(from black l c h / 0.2);
-      border: 1px solid oklch(from white l c h / 0.1);
-    }
+    border: 1px solid oklch(from white l c h / 0.3);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
   
   /* Animation utilities */
