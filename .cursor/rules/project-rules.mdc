@@ -12,7 +12,7 @@ This project uses a modern full-stack architecture optimized for e-commerce appl
 - **Database**: MongoDB with Mongoose ODM
 - **Backend Runtime**: Bun (high-performance JavaScript runtime)
 - **Backend Framework**: Express.js with TypeScript
-- **Frontend**: React.js with TypeScript (NOT Next.js)
+- **Frontend**: Next.js with TypeScript (App Router)
 - **UI Components**: Shadcn/ui component library
 - **File Storage**: MinIO (S3-compatible object storage)
 - **Containerization**: Docker with lightweight optimized images
@@ -33,17 +33,28 @@ project-root/
 │   ├── package.json        # Backend dependencies
 │   ├── tsconfig.json       # TypeScript configuration
 │   └── sample.env          # Environment variables template
-├── frontend/               # React.js + TypeScript frontend
+├── frontend/               # Next.js + TypeScript frontend
 │   ├── src/
-│   │   ├── components/     # React components (Shadcn/ui based)
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API service layer
-│   │   ├── stores/         # State management
+│   │   ├── app/            # Next.js App Router pages and layouts
+│   │   │   ├── (auth)/     # Route groups for authentication
+│   │   │   ├── (dashboard)/ # Route groups for dashboard
+│   │   │   ├── api/        # API routes (if needed)
+│   │   │   ├── globals.css # Global styles
+│   │   │   └── layout.tsx  # Root layout
+│   │   ├── components/     # Reusable components (Shadcn/ui based)
+│   │   │   ├── ui/         # Shadcn/ui components
+│   │   │   └── forms/      # Form components
+│   │   ├── lib/            # Utility functions and configurations
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── stores/         # State management (Zustand/Redux)
 │   │   ├── types/          # TypeScript interfaces
 │   │   └── utils/          # Frontend utilities
+│   ├── public/             # Static assets
 │   ├── package.json        # Frontend dependencies
+│   ├── next.config.js      # Next.js configuration
+│   ├── tailwind.config.js  # Tailwind CSS configuration
 │   ├── tsconfig.json       # TypeScript configuration
-│   └── sample.env          # Environment variables template
+│   └── sample.env.local    # Environment variables template
 ├── docker-compose.yml      # Docker services configuration
 └── README.md              # Project documentation
 ```
@@ -150,50 +161,57 @@ LOG_FILE_PATH=./logs/app.log
 ## Frontend Requirements
 
 ### 1. Framework and UI
-- **MUST** use React.js with TypeScript (NOT Next.js)
+- **MUST** use Next.js 14+ with TypeScript and App Router
 - **MUST** use Shadcn/ui for ALL UI components
 - **MUST** follow the frontend architecture ruleset strictly
 - **MUST** implement proper responsive design for e-commerce UX
+- **MUST** use Tailwind CSS for styling
 
 ### 2. State Management and Routing
-- **MUST** use React Router v6+ for client-side routing
+- **MUST** use Next.js App Router for file-based routing
 - **MUST** implement proper state management (Zustand or Redux Toolkit)
 - **MUST** follow the specified data flow architecture
+- **MUST** use Server Components by default, Client Components only when necessary
 
 ### 3. Environment Configuration
-- **MUST** maintain `frontend/sample.env` file with all required environment variables
+- **MUST** maintain `frontend/sample.env.local` file with all required environment variables
+- **MUST** use Next.js environment variable naming conventions
 
-#### Required frontend/sample.env:
+#### Required frontend/sample.env.local:
 ```env
 # API Configuration
-REACT_APP_API_BASE_URL=http://localhost:5000/api/v1
-REACT_APP_API_TIMEOUT=10000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_API_TIMEOUT=10000
 
 # Authentication
-REACT_APP_TOKEN_STORAGE_KEY=ecommerce_auth_token
-REACT_APP_USER_STORAGE_KEY=ecommerce_user_data
+NEXT_PUBLIC_TOKEN_STORAGE_KEY=ecommerce_auth_token
+NEXT_PUBLIC_USER_STORAGE_KEY=ecommerce_user_data
 
 # File Upload Configuration
-REACT_APP_MAX_FILE_SIZE=5242880  # 5MB in bytes
-REACT_APP_ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp
-REACT_APP_UPLOAD_ENDPOINT=/upload
+NEXT_PUBLIC_MAX_FILE_SIZE=5242880  # 5MB in bytes
+NEXT_PUBLIC_ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp
+NEXT_PUBLIC_UPLOAD_ENDPOINT=/upload
 
 # UI Configuration
-REACT_APP_ITEMS_PER_PAGE=12
-REACT_APP_SEARCH_DEBOUNCE_MS=500
+NEXT_PUBLIC_ITEMS_PER_PAGE=12
+NEXT_PUBLIC_SEARCH_DEBOUNCE_MS=500
 
 # Feature Flags
-REACT_APP_ENABLE_DARK_MODE=true
-REACT_APP_ENABLE_ANALYTICS=false
-REACT_APP_ENABLE_LIVE_CHAT=false
+NEXT_PUBLIC_ENABLE_DARK_MODE=true
+NEXT_PUBLIC_ENABLE_ANALYTICS=false
+NEXT_PUBLIC_ENABLE_LIVE_CHAT=false
 
 # Third-party Services (if needed)
-REACT_APP_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
-REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
 
 # Development
-REACT_APP_DEBUG_MODE=true
-REACT_APP_MOCK_API=false
+NEXT_PUBLIC_DEBUG_MODE=true
+NEXT_PUBLIC_MOCK_API=false
+
+# Next.js Configuration
+NODE_ENV=development
+NEXT_TELEMETRY_DISABLED=1
 ```
 
 ## Docker Configuration
@@ -299,21 +317,23 @@ networks:
 ```
 
 ### 2. Frontend Package.json Requirements
-- **MUST** include React, TypeScript, and Shadcn/ui dependencies
+- **MUST** include Next.js, TypeScript, and Shadcn/ui dependencies
 - **MUST** use proper build and development scripts
+- **MUST** include Tailwind CSS and related dependencies
 
 #### Required frontend/package.json scripts:
 ```json
 {
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext ts,tsx --fix",
-    "type-check": "tsc --noEmit"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   }
 }
 ```
@@ -340,6 +360,129 @@ ecommerce-uploads/
 - **MUST** generate unique file names to prevent conflicts
 - **MUST** implement proper error handling for upload failures
 - **MUST** support multiple file uploads with progress tracking
+
+## Next.js Configuration
+
+### 1. Next.js Configuration Requirements
+- **MUST** use Next.js 14+ with App Router
+- **MUST** configure proper TypeScript support
+- **MUST** set up Tailwind CSS for styling
+- **MUST** configure proper path aliases for imports
+- **MUST** implement proper SEO optimization
+
+#### Required next.config.js:
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    appDir: true,
+  },
+  images: {
+    domains: ['localhost', 'your-minio-domain.com'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+        pathname: '/ecommerce-uploads/**',
+      },
+    ],
+  },
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*',
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
+```
+
+#### Required tailwind.config.js:
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: 0 },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: 0 },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+};
+```
 
 ## TypeScript Configuration
 
@@ -376,13 +519,50 @@ ecommerce-uploads/
 }
 ```
 
+### 3. Required tsconfig.json (Frontend - Next.js):
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "ES6"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
 ## Development Workflow
 
 ### 1. Environment Setup
 1. Clone the repository
-2. Copy `sample.env` files to `.env` in respective directories
+2. Copy `sample.env` files to `.env` in backend and `.env.local` in frontend
 3. Run `docker-compose up -d` to start services
-4. Install dependencies with `bun install` in both directories
+4. Install dependencies with `bun install` in backend and `npm install` in frontend
 5. Start development servers
 
 ### 2. Development Commands
@@ -397,7 +577,7 @@ bun dev
 
 # Frontend development (in new terminal)
 cd frontend
-npm install  # or bun install
+npm install
 npm run dev
 
 # Access services
@@ -417,7 +597,8 @@ npm run dev
 ### 2. Testing Requirements
 - **MUST** write unit tests for all business logic
 - **MUST** implement integration tests for API endpoints
-- **MUST** test React components with React Testing Library
+- **MUST** test Next.js components with Jest and React Testing Library
+- **MUST** test API routes with appropriate testing frameworks
 - **MUST** maintain minimum 80% code coverage
 
 ### 3. Documentation
@@ -434,10 +615,12 @@ npm run dev
 - **MUST** use compression middleware for API responses
 
 ### 2. Frontend Optimization
-- **MUST** implement code splitting for routes
-- **MUST** use lazy loading for images and components
-- **MUST** implement proper state management to avoid unnecessary re-renders
+- **MUST** leverage Next.js built-in optimizations (Image, Font, Script components)
+- **MUST** implement proper code splitting with dynamic imports
+- **MUST** use Server Components for better performance
+- **MUST** implement proper caching strategies (ISR, SSG, SSR)
 - **MUST** optimize bundle size and remove unused dependencies
+- **MUST** use Next.js Image component for optimized image loading
 
 ---
 

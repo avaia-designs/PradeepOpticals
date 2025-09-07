@@ -3,6 +3,7 @@ description: Pradeep Opticals - Frontend code guidelines
 globs: Code Guidelines for the fronted
 alwaysApply: true
 ---
+
 # Frontend Architecture Ruleset
 
 ## Architecture Flow
@@ -114,612 +115,612 @@ export const ProductListingPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<ProductFilters>({});
+            placeholder="Enter your email"
+            className="focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+        >
+          Complete Purchase
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+```
 
-  const { addToCart } = useCart();
-  const { user } = useAuth();
+## 2. Container/Page Layer Rules (Next.js)
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await productService.getProducts(filters);
-        setProducts(response.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch products');
-      } finally {
-        setLoading(false);
-      }
-    };
+### 2.1 Page vs Component Separation
+- **MUST** use `/pages` or `/app` directory only for routing
+- **MUST** keep pages minimal - only routing, layout, and data fetching
+- **MUST** delegate UI logic to components in `/components` directory
+- **MUST** use containers in `/containers` for complex state orchestration
 
-    fetchProducts();
-  }, [filters]);
+### 2.2 Page Structure
+```typescript
+// ✅ Correct page structure (/pages/products/[id].tsx)
+interface ProductPageProps {
+  productId: string;
+}
 
-  const handleAddToCart = useCallback(async (productId: string) => {
-    try {
-      await addToCart(productId, 1);
-      toast.success('Product added to cart');
-    } catch (err) {
-      toast.error('Failed to add product to cart');
-    }
+const ProductPage: NextPage<ProductPageProps> = ({ productId }) => {
+  return (
+    <MainLayout>
+      <SEOHead 
+        title={`Product Details - ${productId}`}
+        description="View detailed product information"
+      />
+      <ProductDetailContainer productId={productId} />
+    </MainLayout>
+  );
+};
+
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  return {
+    props: {
+      productId: params?.id as string,
+    },
+  };
+};
+
+export default ProductPage;
+```
+
+### 2.3 Container Pattern
+```typescript
+// ✅ Container component (/containers/ProductDetailContainer.tsx)
+interface ProductDetailContainerProps {
+  productId: string;
+}
+
+export const ProductDetailContainer: React.FC<ProductDetailContainerProps> = ({ productId }) => {
+  const { data: product, isLoading, error } = useProduct(productId);
+  const { addToCart, isAddingToCart } = useCart();
+  const { addToWishlist } = useWishlist();
+
+  const handleAddToCart = useCallback(async (productId: string, quantity: number) => {
+    await addToCart({ productId, quantity });
+    toast.success('Added to cart successfully!');
   }, [addToCart]);
 
-  if (loading) return <ProductListingSkeleton />;
-  if (error) return <ErrorBoundary error={error} />;
+  if (error) return <ErrorDisplay error={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <ProductFilters onFiltersChange={setFilters} />
-      <ProductGrid 
-        products={products}
+      <ProductDetail
+        product={product}
         onAddToCart={handleAddToCart}
+        onAddToWishlist={addToWishlist}
+        isLoading={isLoading}
+        isAddingToCart={isAddingToCart}
       />
     </div>
   );
 };
 ```
 
-### 2.3 Loading and Error States
-- **MUST** implement skeleton loading states using Shadcn Skeleton
-- **MUST** provide meaningful error messages and recovery options
-- **MUST** handle empty states with proper UI feedback
+## 3. Service Layer Rules
 
-## 3. Routing Layer Rules
-
-### 3.1 React Router Implementation
-- **MUST** use React Router v6+ with proper route structure
-- **MUST** implement nested routes for complex layouts
-- **MUST** use proper route guards for authentication
-- **MUST** implement lazy loading for route components
-
-### 3.2 Router Configuration
-```typescript
-// ✅ Required router structure
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        element: <HomePage />,
-      },
-      {
-        path: "products",
-        element: <ProductLayout />,
-        children: [
-          {
-            index: true,
-            element: <ProductListingPage />,
-          },
-          {
-            path: ":productId",
-            element: <ProductDetailPage />,
-            loader: productLoader,
-          },
-        ],
-      },
-      {
-        path: "cart",
-        element: <ProtectedRoute><CartPage /></ProtectedRoute>,
-      },
-      {
-        path: "checkout",
-        element: <ProtectedRoute><CheckoutPage /></ProtectedRoute>,
-      },
-    ],
-  },
-]);
-```
-
-### 3.2 Protected Routes
-```typescript
-// ✅ Required protected route implementation
-export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) return <LoadingSpinner />;
-  
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
-};
-```
-
-### 3.3 Route-based Code Splitting
-- **MUST** implement lazy loading for all route components
-- **MUST** use React.Suspense with proper fallback components
-
-```typescript
-// ✅ Required lazy loading pattern
-const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
-const CartPage = lazy(() => import('@/pages/CartPage'));
-const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
-```
-
-## 4. State Management Layer Rules
-
-### 4.1 Global State Management
-- **MUST** use Zustand or Redux Toolkit for global state
-- **MUST** separate state by domain (auth, cart, products, orders)
-- **MUST** implement proper state persistence for cart and user preferences
-- **MUST** update state immediately when API operations succeed
-
-### 4.2 Zustand Store Pattern
-```typescript
-// ✅ Required Zustand store structure
-interface CartState {
-  items: CartItem[];
-  total: number;
-  isLoading: boolean;
-  addItem: (productId: string, quantity: number) => Promise<void>;
-  removeItem: (itemId: string) => Promise<void>;
-  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
-  syncWithServer: () => Promise<void>;
-}
-
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
-  total: 0,
-  isLoading: false,
-
-  addItem: async (productId: string, quantity: number) => {
-    set({ isLoading: true });
-    try {
-      const response = await cartService.addItem(productId, quantity);
-      set({ 
-        items: response.items, 
-        total: response.total,
-        isLoading: false 
-      });
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
-
-  // ... other actions
-}));
-```
-
-### 4.3 State Synchronization
-- **MUST** sync state with server after successful API operations
-- **MUST** implement optimistic updates with rollback on failure
-- **MUST** handle concurrent state updates properly
-
-### 4.4 Local State Management
-- **MUST** use useState for component-level state
-- **MUST** use useReducer for complex local state logic
-- **MUST** implement custom hooks for reusable state logic
-
-## 5. Service Layer Rules
-
-### 5.1 Service Structure
-- **MUST** create dedicated service classes for each domain
-- **MUST** implement proper error handling and retries
-- **MUST** handle loading states and provide progress feedback
+### 3.1 Service Implementation
+- **MUST** contain all business logic and data transformation
+- **MUST** handle API calls and error handling
+- **MUST** provide clean interfaces for components
 - **MUST** implement proper caching strategies
 
-### 5.2 Service Implementation
+### 3.2 Service Structure
 ```typescript
-// ✅ Required service pattern
+// ✅ Service layer pattern
 export class ProductService {
-  constructor(private apiClient: ApiClient) {}
+  private apiClient: ApiClient;
+  private cache: Map<string, Product> = new Map();
 
-  async getProducts(filters: ProductFilters): Promise<ApiResponse<Product[]>> {
+  constructor(apiClient: ApiClient) {
+    this.apiClient = apiClient;
+  }
+
+  async getProduct(id: string): Promise<Product> {
+    // Check cache first
+    const cached = this.cache.get(id);
+    if (cached && this.isCacheValid(cached)) {
+      return cached;
+    }
+
     try {
-      const response = await this.apiClient.get<Product[]>('/products', {
-        params: filters,
-      });
+      const response = await this.apiClient.get<ProductResponse>(`/products/${id}`);
+      const product = this.transformProductData(response.data);
       
-      return response.data;
+      // Cache the result
+      this.cache.set(id, product);
+      
+      return product;
     } catch (error) {
-      this.handleError(error, 'Failed to fetch products');
-      throw error;
+      throw new ProductNotFoundError(`Product with ID ${id} not found`);
     }
   }
 
-  async getProductById(id: string): Promise<ApiResponse<Product>> {
-    try {
-      const response = await this.apiClient.get<Product>(`/products/${id}`);
-      return response.data;
-    } catch (error) {
-      this.handleError(error, `Failed to fetch product ${id}`);
-      throw error;
-    }
-  }
-
-  private handleError(error: unknown, context: string): void {
-    console.error(`${context}:`, error);
-    // Additional error logging/reporting logic
+  private transformProductData(data: ProductResponse): Product {
+    return {
+      id: data._id,
+      name: data.name,
+      price: Number(data.price),
+      imageUrl: data.images?.[0]?.url || '/placeholder-image.jpg',
+      category: data.category,
+      inStock: data.inventory > 0,
+      rating: data.reviews?.averageRating || 0,
+      reviewCount: data.reviews?.count || 0
+    };
   }
 }
-
-export const productService = new ProductService(apiClient);
 ```
 
-### 5.3 Caching Strategy
-- **MUST** implement proper caching for frequently accessed data
-- **MUST** invalidate cache when related data changes
-- **MUST** use React Query or SWR for server state management
+## 4. API Layer Rules
 
-## 6. API Layer Rules
+### 4.1 API Client Implementation
+- **MUST** use a centralized API client with interceptors
+- **MUST** implement proper error handling and retry logic
+- **MUST** handle authentication tokens automatically
+- **MUST** provide type-safe API calls
 
-### 6.1 API Client Configuration
-- **MUST** use Axios or Fetch with proper interceptors
-- **MUST** implement request/response transformations
-- **MUST** handle authentication token management
-- **MUST** implement proper error handling and retries
-
-### 6.2 API Client Implementation
+### 4.2 API Client Structure
 ```typescript
-// ✅ Required API client pattern
-class ApiClient {
+// ✅ API client pattern
+export class ApiClient {
   private client: AxiosInstance;
 
   constructor(baseURL: string) {
     this.client = axios.create({
       baseURL,
       timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     this.setupInterceptors();
   }
 
   private setupInterceptors(): void {
-    // Request interceptor for auth token
-    this.client.interceptors.request.use((config) => {
-      const token = tokenStorage.getToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
+    // Request interceptor
+    this.client.interceptors.request.use(
+      (config) => {
+        const token = getAuthToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-    // Response interceptor for error handling
+    // Response interceptor
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          await authService.logout();
-          window.location.href = '/login';
+          await handleTokenRefresh();
+          return this.client.request(error.config);
         }
-        return Promise.reject(error);
+        return Promise.reject(new ApiError(error));
       }
     );
   }
 
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.get<T>(url, config);
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    const response = await this.client.get<T>(url, config);
+    return { data: response.data, status: response.status };
   }
 
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.post<T>(url, data, config);
+  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    const response = await this.client.post<T>(url, data, config);
+    return { data: response.data, status: response.status };
   }
-
-  // ... other HTTP methods
 }
-
-export const apiClient = new ApiClient(process.env.REACT_APP_API_URL!);
 ```
 
-### 6.3 Request/Response Types
-- **MUST** define TypeScript interfaces for all API requests/responses
-- **MUST** use consistent API response format matching backend
-- **MUST** implement proper error response handling
+## 5. Store/State Management Rules
 
-## 7. Data Models and Type System Rules
+### 5.1 State Management Implementation
+- **MUST** use Zustand or Redux Toolkit for global state
+- **MUST** update store when API data changes
+- **MUST** implement optimistic updates where appropriate
+- **MUST** maintain normalized state structure
 
-### 7.1 Model Hierarchy and Relationships
-- **MUST** create base models that other models extend
-- **MUST** implement proper model relationships similar to database design
-- **MUST** use consistent naming conventions across all models
-
-### 7.2 Model Implementation
+### 5.2 Store Structure (Zustand)
 ```typescript
-// ✅ Required model hierarchy
-interface BaseModel {
+// ✅ Store implementation
+interface CartState {
+  items: CartItem[];
+  total: number;
+  isLoading: boolean;
+  error: string | null;
+  
+  // Actions
+  addItem: (item: CartItem) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  clearCart: () => void;
+  loadCart: () => Promise<void>;
+}
+
+export const useCartStore = create<CartState>((set, get) => ({
+  items: [],
+  total: 0,
+  isLoading: false,
+  error: null,
+
+  addItem: async (item: CartItem) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Optimistic update
+      const currentItems = get().items;
+      const existingItem = currentItems.find(i => i.productId === item.productId);
+      
+      let newItems: CartItem[];
+      if (existingItem) {
+        newItems = currentItems.map(i => 
+          i.productId === item.productId 
+            ? { ...i, quantity: i.quantity + item.quantity }
+            : i
+        );
+      } else {
+        newItems = [...currentItems, item];
+      }
+
+      set({ items: newItems, total: calculateTotal(newItems) });
+
+      // API call
+      await cartService.addItem(item);
+      
+      set({ isLoading: false });
+    } catch (error) {
+      // Revert optimistic update
+      set({ items: get().items, error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  removeItem: async (itemId: string) => {
+    const currentItems = get().items;
+    const newItems = currentItems.filter(item => item.id !== itemId);
+    
+    // Optimistic update
+    set({ items: newItems, total: calculateTotal(newItems) });
+
+    try {
+      await cartService.removeItem(itemId);
+    } catch (error) {
+      // Revert on error
+      set({ items: currentItems });
+      throw error;
+    }
+  }
+}));
+```
+
+## 6. Data Model Rules
+
+### 6.1 Model Hierarchy and Relationships
+- **MUST** define base models that other models extend
+- **MUST** maintain consistent relationships like database models
+- **MUST** implement proper type inheritance
+
+### 6.2 Model Structure
+```typescript
+// ✅ Base model pattern
+interface BaseEntity {
   id: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface User extends BaseModel {
-  email: string;
-  name: string;
-  role: UserRole;
-  profile: UserProfile;
-  addresses: Address[];
-  orders: Order[];
-}
-
-interface Product extends BaseModel {
+interface BaseProduct extends BaseEntity {
   name: string;
   description: string;
   price: number;
-  currency: string;
-  images: ProductImage[];
+  imageUrl: string;
   category: Category;
-  variants: ProductVariant[];
-  inventory: InventoryInfo;
-  ratings: ProductRating[];
-  averageRating: number;
 }
 
-interface Order extends BaseModel {
+// Extended models
+interface Product extends BaseProduct {
+  inventory: number;
+  rating: number;
+  reviewCount: number;
+  variants: ProductVariant[];
+  relatedProducts: Product[];
+}
+
+interface CartItem extends BaseEntity {
+  productId: string;
+  product: Pick<Product, 'name' | 'price' | 'imageUrl'>; // Partial product data
+  quantity: number;
+  selectedVariant?: ProductVariant;
+}
+
+interface Order extends BaseEntity {
   userId: string;
-  user: User; // Populated reference
   items: OrderItem[];
-  total: number;
+  totalAmount: number;
   status: OrderStatus;
   shippingAddress: Address;
-  billingAddress: Address;
-  paymentInfo: PaymentInfo;
+  paymentMethod: PaymentMethod;
 }
 
-// DTO types for API operations
-interface CreateOrderDto {
-  items: CreateOrderItemDto[];
-  shippingAddressId: string;
-  billingAddressId: string;
-  paymentMethodId: string;
+interface OrderItem {
+  productId: string;
+  product: Pick<Product, 'name' | 'imageUrl'>; // Minimal product data
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 }
-```
 
-### 7.3 Type Safety Rules
-- **MUST** use strict TypeScript configuration
-- **MUST NOT** use `any` type under any circumstances
-- **MUST** use union types for enums and status values
-- **MUST** implement proper type guards for runtime type checking
-
-### 7.4 Data Transformation
-```typescript
-// ✅ Required data transformation utilities
-export class ModelTransformer {
-  static productFromApi(apiProduct: ApiProduct): Product {
-    return {
-      ...apiProduct,
-      createdAt: new Date(apiProduct.createdAt),
-      updatedAt: new Date(apiProduct.updatedAt),
-      price: Number(apiProduct.price),
-      averageRating: Number(apiProduct.averageRating),
-    };
-  }
-
-  static productToApi(product: Product): ApiProductRequest {
-    return {
-      name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      categoryId: product.category.id,
-    };
-  }
+// Category hierarchy
+interface Category extends BaseEntity {
+  name: string;
+  slug: string;
+  parentCategory?: Category;
+  childCategories: Category[];
+  productCount: number;
 }
 ```
 
-## 8. Validation Layer Rules
+### 6.3 Data Transformation
+- **MUST** transform API responses to consistent frontend models
+- **MUST** handle missing or null data gracefully
+- **MUST** validate data at model boundaries
 
-### 8.1 Client-side Validation
-- **MUST** validate all user inputs before sending to API
-- **MUST** use Zod or Yup for schema validation
+## 7. Validation Rules
+
+### 7.1 Input Validation
+- **MUST** validate all user inputs before processing
 - **MUST** provide real-time validation feedback
-- **MUST** implement proper form validation with error states
+- **MUST** use schema validation libraries (Zod, Yup)
 
-### 8.2 Form Validation Implementation
+### 7.2 Form Validation Pattern
 ```typescript
-// ✅ Required form validation pattern
+// ✅ Validation implementation
+import { z } from 'zod';
+
 const checkoutSchema = z.object({
-  shippingAddress: z.object({
-    street: z.string().min(5, "Street address must be at least 5 characters"),
-    city: z.string().min(2, "City is required"),
-    postalCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid postal code"),
-    country: z.string().min(2, "Country is required"),
+  email: z.string().email('Please enter a valid email'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  address: z.object({
+    street: z.string().min(5, 'Please enter a valid street address'),
+    city: z.string().min(2, 'Please enter a valid city'),
+    zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, 'Please enter a valid ZIP code'),
+    country: z.string().min(2, 'Please select a country')
   }),
-  paymentMethod: z.object({
-    cardNumber: z.string().regex(/^\d{16}$/, "Card number must be 16 digits"),
-    expiryMonth: z.number().min(1).max(12),
-    expiryYear: z.number().min(new Date().getFullYear()),
-    cvv: z.string().regex(/^\d{3,4}$/, "CVV must be 3 or 4 digits"),
-  }),
+  paymentMethod: z.enum(['credit_card', 'paypal', 'apple_pay'])
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export const CheckoutForm: React.FC = () => {
-  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<CheckoutFormData>({
+  const { register, handleSubmit, formState: { errors, isValid } } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
+    mode: 'onChange' // Real-time validation
   });
 
-  const onSubmit = async (data: CheckoutFormData) => {
-    try {
-      await orderService.createOrder(data);
-      router.push('/order-confirmation');
-    } catch (error) {
-      toast.error('Failed to process order');
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-4">
-        <Controller
-          name="shippingAddress.street"
-          control={control}
-          render={({ field }) => (
-            <div>
-              <Input
-                {...field}
-                placeholder="Street Address"
-                className={errors.shippingAddress?.street ? "border-red-500" : ""}
-              />
-              {errors.shippingAddress?.street && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.shippingAddress.street.message}
-                </p>
-              )}
-            </div>
-          )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email *</Label>
+        <Input
+          {...register('email')}
+          type="email"
+          className={errors.email ? 'border-red-500 focus:ring-red-500' : ''}
         />
+        {errors.email && (
+          <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+        )}
       </div>
       
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Processing..." : "Place Order"}
+      <Button 
+        type="submit" 
+        disabled={!isValid}
+        className="w-full"
+      >
+        Complete Purchase
       </Button>
     </form>
   );
 };
 ```
 
-## 9. UI/UX and Design Rules
+## 8. Data Binding and Hydration Rules
 
-### 9.1 Modern Aesthetic Requirements
-- **MUST** use modern design principles with clean, minimal interfaces
-- **MUST** implement consistent spacing using Tailwind's spacing scale
-- **MUST** use proper typography hierarchy with readable font sizes
-- **MUST** implement dark/light theme support
+### 8.1 Server-Side Rendering (SSR) Hydration
+- **MUST** implement proper SSR hydration for SEO and performance
+- **MUST** handle hydration mismatches gracefully
+- **MUST** prefetch critical data on server
 
-### 9.2 E-commerce UX Best Practices
-- **MUST** provide clear product information and pricing
-- **MUST** implement intuitive navigation and search functionality
-- **MUST** show loading states during all async operations
-- **MUST** provide clear calls-to-action throughout the shopping flow
-- **MUST** implement proper error states with recovery options
-
-### 9.3 Image and Media Handling
+### 8.2 Hydration Implementation
 ```typescript
-// ✅ Required image optimization and zoom
-export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({ images }) => {
-  const [selectedImage, setSelectedImage] = useState(0);
+// ✅ SSR hydration pattern
+interface ProductPageProps {
+  initialProduct: Product;
+  relatedProducts: Product[];
+}
+
+export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({ params }) => {
+  const productId = params?.id as string;
+
+  try {
+    const [product, relatedProducts] = await Promise.all([
+      productService.getProduct(productId),
+      productService.getRelatedProducts(productId, 4)
+    ]);
+
+    return {
+      props: {
+        initialProduct: product,
+        relatedProducts
+      }
+    };
+  } catch (error) {
+    return { notFound: true };
+  }
+};
+
+// Component with hydration
+export const ProductDetailContainer: React.FC<ProductPageProps> = ({ 
+  initialProduct, 
+  relatedProducts 
+}) => {
+  // Initialize store with server data
+  const { data: product } = useProduct(initialProduct.id, {
+    initialData: initialProduct, // Prevent loading state on hydration
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+
+  const { data: related } = useRelatedProducts(initialProduct.id, {
+    initialData: relatedProducts
+  });
 
   return (
-    <div className="space-y-4">
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-        <img
-          src={images[selectedImage].url}
-          alt={images[selectedImage].alt}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-110 cursor-zoom-in"
-        />
-      </div>
-      
-      <div className="flex space-x-2 overflow-x-auto">
-        {images.map((image, index) => (
-          <button
-            key={image.id}
-            onClick={() => setSelectedImage(index)}
-            className={cn(
-              "flex-shrink-0 aspect-square w-16 h-16 rounded-md overflow-hidden border-2 transition-colors",
-              selectedImage === index ? "border-primary" : "border-transparent"
-            )}
-          >
-            <img
-              src={image.thumbnailUrl}
-              alt={image.alt}
-              className="w-full h-full object-cover hover:scale-105 transition-transform"
-            />
-          </button>
-        ))}
-      </div>
+    <div>
+      <ProductDetail product={product} />
+      <RelatedProducts products={related} />
     </div>
   );
 };
 ```
 
-### 9.4 Responsive Design
-- **MUST** implement mobile-first responsive design
-- **MUST** test on all screen sizes from mobile to desktop
-- **MUST** use Tailwind's responsive prefixes consistently
-- **MUST** ensure touch-friendly interface elements on mobile
+## 9. React Best Practices Rules
 
-## 10. Performance and Optimization Rules
+### 9.1 Routing (Next.js)
+- **MUST** use Next.js App Router for new projects
+- **MUST** implement proper loading states for route transitions
+- **MUST** use dynamic imports for code splitting
+- **MUST** implement proper error boundaries
 
-### 10.1 Component Optimization
-- **MUST** use React.memo for expensive components
-- **MUST** implement proper useCallback and useMemo usage
-- **MUST** avoid unnecessary re-renders through proper dependency arrays
+### 9.2 Data Fetching
+- **MUST** use React Query/TanStack Query for server state
+- **MUST** implement proper caching strategies
+- **MUST** handle loading and error states consistently
 
-### 10.2 Image and Asset Optimization
-- **MUST** implement lazy loading for all images
-- **MUST** use proper image formats (WebP, AVIF) with fallbacks
-- **MUST** implement progressive image loading with placeholders
-
-### 10.3 Code Splitting and Bundle Optimization
-- **MUST** implement route-based code splitting
-- **MUST** use dynamic imports for heavy libraries
-- **MUST** optimize bundle size and remove unused code
-
-## 11. Data Binding and Hydration Rules
-
-### 11.1 Server-Side Rendering (SSR)
-- **MUST** implement proper SSR for SEO-critical pages
-- **MUST** handle hydration mismatches gracefully
-- **MUST** use proper data fetching patterns for SSR
-
-### 11.2 Data Binding Patterns
 ```typescript
-// ✅ Required data binding pattern
-export const ProductList: React.FC = () => {
-  const { data: products, isLoading, error, refetch } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => productService.getProducts(),
+// ✅ Data fetching pattern
+export const useProducts = (filters: ProductFilters) => {
+  return useQuery({
+    queryKey: ['products', filters],
+    queryFn: () => productService.getProducts(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  const cartStore = useCartStore();
-
-  // Auto-sync cart when products data changes
-  useEffect(() => {
-    if (products) {
-      cartStore.syncWithServer();
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (error) => {
+      toast.error('Failed to load products');
+      logError('PRODUCTS_FETCH_ERROR', error);
     }
-  }, [products, cartStore]);
+  });
+};
 
-  if (isLoading) return <ProductListSkeleton />;
-  if (error) return <ErrorBoundary error={error} retry={refetch} />;
+// Usage in component
+export const ProductList: React.FC<ProductListProps> = ({ filters }) => {
+  const { data: products, isLoading, error, refetch } = useProducts(filters);
+
+  if (error) {
+    return (
+      <ErrorState 
+        message="Failed to load products" 
+        onRetry={refetch}
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={cartStore.addItem}
-        />
-      ))}
+      {isLoading ? (
+        <ProductSkeleton count={6} />
+      ) : (
+        products?.map(product => (
+          <ProductCard 
+            key={product.id} 
+            product={product}
+            onAddToCart={handleAddToCart}
+          />
+        ))
+      )}
     </div>
   );
 };
 ```
 
-## 12. Error Handling and Logging Rules
+## 10. E-commerce UX Rules
 
-### 12.1 Error Boundaries
-- **MUST** implement error boundaries at route and component levels
-- **MUST** provide user-friendly error messages with recovery options
-- **MUST** log errors for debugging and monitoring
+### 10.1 Product Display Requirements
+- **MUST** implement image zoom on hover for all product images
+- **MUST** provide multiple product image views (gallery)
+- **MUST** show stock status and availability
+- **MUST** display pricing clearly with discounts highlighted
 
-### 12.2 Client-side Logging
+### 10.2 Shopping Cart UX
+- **MUST** provide visual feedback for add to cart actions
+- **MUST** show cart item count in header/navigation
+- **MUST** implement cart persistence across sessions
+- **MUST** provide easy quantity updates and removal
+
+### 10.3 Checkout Experience
+- **MUST** implement single-page checkout flow
+- **MUST** show progress indicators for multi-step processes
+- **MUST** provide guest checkout option
+- **MUST** display order summary throughout checkout
+
+## 11. Modern Aesthetic Rules
+
+### 11.1 Design System
+- **MUST** use consistent spacing scale (4, 8, 16, 24, 32px)
+- **MUST** implement proper color contrast ratios (WCAG AA)
+- **MUST** use modern typography scale with proper line heights
+- **MUST** implement smooth animations and transitions
+
+### 11.2 Visual Design Patterns
 ```typescript
-// ✅ Required logging implementation
-export class Logger {
-  static info(message: string, data?: Record<string, any>): void {
-    console.info(`[INFO] ${message}`, data);
-    // Send to analytics/monitoring service in production
+// ✅ Modern design system
+const designTokens = {
+  spacing: {
+    xs: '0.25rem', // 4px
+    sm: '0.5rem',  // 8px
+    md: '1rem',    // 16px
+    lg: '1.5rem',  // 24px
+    xl: '2rem',    // 32px
+  },
+  borderRadius: {
+    sm: '0.25rem',
+    md: '0.5rem',
+    lg: '1rem',
+    full: '9999px'
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+  },
+  animations: {
+    fast: '150ms ease-in-out',
+    normal: '300ms ease-in-out',
+    slow: '500ms ease-in-out'
   }
+};
 
-  static error(message: string, error?: Error, data?: Record<string, any>): void {
-    console.error(`[ERROR] ${message}`, error, data);
-    // Send to error reporting service in production
-  }
-
-  static userAction(action: string, data?: Record<string, any>): void {
+// Modern card component
+export const ModernProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  return (
+    <Card className="group overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm">
+      <div className="relative overflow-hidden">
+        <ProductImage 
+          src={product.imageUrl}
+          alt={product.name}
+          className="aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <Button
+          size="sm"
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
+          variant="secondary"
     console.log(`[USER_ACTION] ${action}`, data);
     // Send to analytics service for user behavior tracking
   }
