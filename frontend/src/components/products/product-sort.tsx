@@ -2,43 +2,37 @@
 
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface ProductSortProps {
-  className?: string;
+  sortBy: string;
+  sortOrder: string;
+  onSortChange: (sortBy: string, sortOrder: string) => void;
 }
 
-export function ProductSort({ className }: ProductSortProps) {
-  const [sortBy, setSortBy] = React.useState('name');
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+export function ProductSort({ sortBy, sortOrder, onSortChange }: ProductSortProps) {
+  const handleSortChange = (value: string) => {
+    const [newSortBy, newSortOrder] = value.split('-');
+    onSortChange(newSortBy, newSortOrder);
+  };
 
   const sortOptions = [
-    { value: 'name', label: 'Name' },
-    { value: 'price', label: 'Price' },
-    { value: 'rating', label: 'Rating' },
-    { value: 'createdAt', label: 'Newest' },
-    { value: 'popularity', label: 'Popularity' },
+    { value: 'createdAt-desc', label: 'Newest First' },
+    { value: 'createdAt-asc', label: 'Oldest First' },
+    { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'price-desc', label: 'Price: High to Low' },
+    { value: 'name-asc', label: 'Name: A to Z' },
+    { value: 'name-desc', label: 'Name: Z to A' },
+    { value: 'rating-desc', label: 'Highest Rated' },
+    { value: 'rating-asc', label: 'Lowest Rated' },
   ];
 
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
-    // TODO: Implement actual sorting logic
-    console.log('Sort by:', value, 'Order:', sortOrder);
-  };
-
-  const toggleSortOrder = () => {
-    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-    setSortOrder(newOrder);
-    // TODO: Implement actual sorting logic
-    console.log('Sort by:', sortBy, 'Order:', newOrder);
-  };
+  const currentValue = `${sortBy}-${sortOrder}`;
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <span className="text-sm text-muted-foreground">Sort by:</span>
-      <Select value={sortBy} onValueChange={handleSortChange}>
-        <SelectTrigger className="w-40">
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-gray-600">Sort by:</span>
+      <Select value={currentValue} onValueChange={handleSortChange}>
+        <SelectTrigger className="w-48">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -49,21 +43,6 @@ export function ProductSort({ className }: ProductSortProps) {
           ))}
         </SelectContent>
       </Select>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={toggleSortOrder}
-        className="h-9 w-9"
-      >
-        {sortOrder === 'asc' ? (
-          <ArrowUp className="h-4 w-4" />
-        ) : (
-          <ArrowDown className="h-4 w-4" />
-        )}
-        <span className="sr-only">
-          {sortOrder === 'asc' ? 'Sort ascending' : 'Sort descending'}
-        </span>
-      </Button>
     </div>
   );
 }

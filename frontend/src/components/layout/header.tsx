@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, ShoppingCart, Heart, User, Menu, X, Eye, Phone, Mail, MapPin } from 'lucide-react';
-import { useCartStore } from '@/stores/cart-store';
+import { useCartStore, useTotalItems } from '@/stores/cart-store';
 import { useUserStore } from '@/stores/user-store';
 import { useProductSuggestions } from '@/hooks/use-products';
 import { debounce } from '@/lib/utils';
@@ -27,13 +27,16 @@ export function Header({ className }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  const { totalItems } = useCartStore();
-  const { user, isAuthenticated, wishlistCount, logout } = useUserStore();
+  const totalItems = useTotalItems();
+  const { user, isAuthenticated, logout } = useUserStore();
+  const wishlistCount = 0; // TODO: Implement wishlist functionality
   
-  const { data: suggestions = [], isLoading: isSuggestionsLoading } = useProductSuggestions(
-    searchQuery,
+  const { data: suggestionsData, isLoading: isSuggestionsLoading } = useProductSuggestions(
+    searchQuery,  
     5
-  ) as { data: string[]; isLoading: boolean };
+  );
+  
+  const suggestions = suggestionsData?.data?.map(product => product.name) || [];
 
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);

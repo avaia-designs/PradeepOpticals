@@ -3,15 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, ShoppingCart, Eye, Star, RefreshCw } from 'lucide-react';
-import { Product } from '@/types';
+import { Heart, ShoppingCart, Star, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Product } from '@/types';
 import { useCartStore } from '@/stores/cart-store';
-import { useUserStore } from '@/stores/user-store';
-import { formatCurrency, calculateDiscountPercentage } from '@/lib/utils';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -20,191 +18,147 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const { addItem } = useCartStore();
-  const { addToWishlist, isInWishlist } = useUserStore();
 
-  const discountPercentage = product.originalPrice 
-    ? calculateDiscountPercentage(product.originalPrice, product.price)
-    : 0;
-
-  const handleAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (isAddingToCart) return;
-    
-    setIsAddingToCart(true);
+  const handleAddToCart = async () => {
     try {
-      await addItem(product.id, 1);
+      setIsLoading(true);
+      await addItem(product._id, 1);
       toast.success('Added to cart!');
     } catch (error) {
       toast.error('Failed to add to cart');
     } finally {
-      setIsAddingToCart(false);
+      setIsLoading(false);
     }
   };
 
-  const handleAddToWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (isAddingToWishlist) return;
-    
-    setIsAddingToWishlist(true);
-    try {
-      await addToWishlist(product.id);
-      toast.success('Added to wishlist!');
-    } catch (error) {
-      toast.error('Failed to add to wishlist');
-    } finally {
-      setIsAddingToWishlist(false);
-    }
+  const handleWishlist = () => {
+    setIsWishlisted(!isWishlisted);
+    toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 
-  const isInWishlistValue = isInWishlist(product.id);
+  const discountPercentage = product.originalPrice && product.price < product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
 
   return (
-    <Card 
-      className={cn(
-        'group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
-        className
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Link href={`/products/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden">
-          <Image
-            src={product.imageUrl || "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&h=400&fit=crop&crop=center"}
-            alt={product.name}
-            fill
-            className={cn(
-              'object-cover transition-transform duration-500 ease-out',
-              isHovered ? 'scale-105' : 'scale-100'
-            )}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
-          
-          {/* Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-2">
-            {product.isFeatured && (
-              <Badge variant="secondary" className="w-fit">
-                Featured
-              </Badge>
-            )}
+    <Card className={cn('group relative overflow-hidden transition-all duration-300 hover:shadow-lg', className)}>
+      <div className="relative overflow-hidden">
+        <Link href={`/products/${product._id}`}>
+          <div className="relative aspect-square">
+            <Image
+              src={product.images[0] || '/placeholder-image.jpg'}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
             {discountPercentage > 0 && (
-              <Badge variant="destructive" className="w-fit">
+              <Badge
+                variant="destructive"
+                className="absolute top-2 left-2"
+              >
                 -{discountPercentage}%
               </Badge>
             )}
-            {!product.inventory && (
-              <Badge variant="outline" className="w-fit bg-background/80">
-                Out of Stock
+            {product.featured && (
+              <Badge
+                variant="secondary"
+                className="absolute top-2 right-2"
+              >
+                Featured
               </Badge>
             )}
           </div>
+        </Link>
 
-          {/* Quick Actions */}
-          <div className={cn(
-            'absolute top-2 right-2 flex flex-col gap-2 transition-all duration-300',
-            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-          )}>
+        {/* Quick Actions */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="flex space-x-2">
             <Button
+              size="sm"
               variant="secondary"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
-              onClick={handleAddToWishlist}
-              disabled={isAddingToWishlist}
+              className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
+              onClick={handleWishlist}
             >
-              <Heart 
-                className={cn(
-                  'h-4 w-4',
-                  isInWishlistValue ? 'fill-red-500 text-red-500' : ''
-                )}
-              />
+              <Heart className={cn('h-4 w-4', isWishlisted && 'fill-red-500 text-red-500')} />
             </Button>
             <Button
+              size="sm"
               variant="secondary"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
+              className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
+              asChild
             >
-              <Eye className="h-4 w-4" />
+              <Link href={`/products/${product._id}`}>
+                <Eye className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
-
-          {/* Overlay on hover */}
-          {isHovered && (
-            <div className="absolute inset-0 bg-black/10 transition-opacity duration-300" />
-          )}
         </div>
-      </Link>
+      </div>
 
       <CardContent className="p-4">
-        <div className="space-y-3">
-          {/* Brand */}
-          <div className="text-sm text-muted-foreground font-medium">
-            {product.brand}
+        <div className="space-y-2">
+          <div className="flex items-start justify-between">
+            <Link href={`/products/${product._id}`}>
+              <h3 className="font-medium text-gray-900 line-clamp-2 hover:text-primary transition-colors">
+                {product.name}
+              </h3>
+            </Link>
           </div>
 
-          {/* Product Name */}
-          <Link href={`/products/${product.id}`}>
-            <h3 className="font-semibold text-sm line-clamp-2 hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-          </Link>
-
-          {/* Rating */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-1">
             <div className="flex items-center">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
                   className={cn(
-                    'h-3 w-3',
-                    i < Math.floor(product.rating) 
-                      ? 'fill-yellow-400 text-yellow-400' 
+                    'h-4 w-4',
+                    i < Math.floor(product.rating || 0)
+                      ? 'text-yellow-400 fill-yellow-400'
                       : 'text-gray-300'
                   )}
                 />
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-sm text-gray-600">
               ({product.reviewCount})
             </span>
           </div>
 
-          {/* Price */}
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold">
-              {formatCurrency(product.price)}
-            </span>
-            {product.originalPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                {formatCurrency(product.originalPrice)}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-gray-900">
+                ${product.price.toFixed(2)}
               </span>
-            )}
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-sm text-gray-500 line-through">
+                  ${product.originalPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-gray-600">
+              {product.inventory > 0 ? (
+                <span className="text-green-600">In Stock</span>
+              ) : (
+                <span className="text-red-600">Out of Stock</span>
+              )}
+            </div>
           </div>
 
-          {/* Add to Cart Button */}
           <Button
-            className="w-full"
             onClick={handleAddToCart}
-            disabled={!product.inventory || isAddingToCart}
+            disabled={isLoading || product.inventory === 0}
+            className="w-full"
+            size="sm"
           >
-            {isAddingToCart ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
-              </>
-            ) : !product.inventory ? (
-              'Out of Stock'
+            {isLoading ? (
+              'Adding...'
             ) : (
               <>
-                <ShoppingCart className="h-4 w-4 mr-2" />
+                <ShoppingCart className="mr-2 h-4 w-4" />
                 Add to Cart
               </>
             )}

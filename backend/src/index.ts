@@ -27,8 +27,7 @@ class Application {
     this.app = express();
     this.config = Config.get();
     
-    // Initialize logger
-    Logger.initialize(this.config);
+    // Logger is already initialized as a static class
     
     this.setupMiddleware();
     this.setupRoutes();

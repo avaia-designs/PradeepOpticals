@@ -1,77 +1,163 @@
-import { EnvironmentConfig } from '../types';
+import winston from 'winston';
+import path from 'path';
 
-/**
- * Logger utility for consistent logging across the application
- * Implements structured logging with correlation IDs and proper log levels
- */
+// Define log levels
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
+};
+
+// Define colors for each level
+const colors = {
+  error: 'red',
+  warn: 'yellow',
+  info: 'green',
+  http: 'magenta',
+  debug: 'white',
+};
+
+// Tell winston that you want to link the colors
+winston.addColors(colors);
+
+// Define which level to use based on environment
+const level = () => {
+  const env = process.env.NODE_ENV || 'development';
+  const isDevelopment = env === 'development';
+  return isDevelopment ? 'debug' : 'warn';
+};
+
+// Define format for logs
+const format = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.colorize({ all: true }),
+  winston.format.printf(
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`
+  )
+);
+
+// Define transports
+const transports = [
+  // Console transport
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  }),
+  
+  // File transport for errors
+  new winston.transports.File({
+    filename: path.join(process.cwd(), 'logs', 'error.log'),
+    level: 'error',
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    )
+  }),
+  
+  // File transport for all logs
+  new winston.transports.File({
+    filename: path.join(process.cwd(), 'logs', 'combined.log'),
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    )
+  })
+];
+
+// Create the logger
+const logger = winston.createLogger({
+  level: level(),
+  levels,
+  format,
+  transports,
+  exitOnError: false
+});
+
+// Create a stream object with a 'write' function that will be used by morgan
+(logger as any).stream = {
+  write: (message: string) => {
+    logger.http(message.substring(0, message.lastIndexOf('\n')));
+  },
+};
+
 export class Logger {
-  private static logLevel: string;
-
-  static initialize(config: EnvironmentConfig): void {
-    this.logLevel = config.LOG_LEVEL;
+  /**
+   * Log info message
+   */
+  static info(message: string, meta?: any): void {
+    logger.info(message, meta);
   }
 
-  static info(message: string, data?: Record<string, any>, correlationId?: string): void {
-    if (this.shouldLog('info')) {
-      console.info(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'INFO',
-        message,
-        correlationId,
-        ...data
-      }));
-    }
+  /**
+   * Log warning message
+   */
+  static warn(message: string, meta?: any): void {
+    logger.warn(message, meta);
   }
 
-  static error(message: string, error?: Error, data?: Record<string, any>, correlationId?: string): void {
-    if (this.shouldLog('error')) {
-      console.error(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'ERROR',
-        message,
-        error: error ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        } : undefined,
-        correlationId,
-        ...data
-      }));
-    }
+  /**
+   * Log error message
+   */
+  static error(message: string, error?: Error, meta?: any): void {
+    logger.error(message, {
+      error: error?.message,
+      stack: error?.stack,
+      ...meta
+    });
   }
 
-  static warn(message: string, data?: Record<string, any>, correlationId?: string): void {
-    if (this.shouldLog('warn')) {
-      console.warn(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'WARN',
-        message,
-        correlationId,
-        ...data
-      }));
-    }
+  /**
+   * Log debug message
+   */
+  static debug(message: string, meta?: any): void {
+    logger.debug(message, meta);
   }
 
-  static debug(message: string, data?: Record<string, any>, correlationId?: string): void {
-    if (this.shouldLog('debug')) {
-      console.debug(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'DEBUG',
-        message,
-        correlationId,
-        ...data
-      }));
-    }
+  /**
+   * Log HTTP request
+   */
+  static http(message: string, meta?: any): void {
+    logger.http(message, meta);
   }
 
-  private static shouldLog(level: string): boolean {
-    const levels = ['error', 'warn', 'info', 'debug'];
-    const currentLevelIndex = levels.indexOf(this.logLevel);
-    const requestedLevelIndex = levels.indexOf(level);
-    return requestedLevelIndex <= currentLevelIndex;
+  /**
+   * Log user action
+   */
+  static userAction(action: string, data?: any): void {
+    logger.info(`[USER_ACTION] ${action}`, data);
   }
 
+  /**
+   * Log business event
+   */
+  static businessEvent(event: string, data?: any): void {
+    logger.info(`[BUSINESS_EVENT] ${event}`, data);
+  }
+
+  /**
+   * Log security event
+   */
+  static securityEvent(event: string, data?: any): void {
+    logger.warn(`[SECURITY_EVENT] ${event}`, data);
+  }
+
+  /**
+   * Log performance metric
+   */
+  static performance(operation: string, duration: number, meta?: any): void {
+    logger.info(`[PERFORMANCE] ${operation} took ${duration}ms`, meta);
+  }
+
+  /**
+   * Generate correlation ID for request tracing
+   */
   static generateCorrelationId(): string {
     return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
+
+export default logger;

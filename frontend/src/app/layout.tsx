@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import { MainLayout } from "@/components/layout/main-layout";
+import { QueryProvider } from "@/lib/providers/query-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -67,9 +68,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
       >
-        <MainLayout>
-          {children}
-        </MainLayout>
+        <QueryProvider>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -20,6 +20,7 @@ export interface AuthenticatedRequest extends Request {
 // User role enum
 export enum UserRole {
   USER = 'user',
+  STAFF = 'staff',
   ADMIN = 'admin'
 }
 

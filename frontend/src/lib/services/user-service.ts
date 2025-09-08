@@ -1,15 +1,15 @@
 import { apiClient } from '@/lib/api-client';
-import { User, LoginFormData, RegisterFormData, Address, WishlistItem } from '@/types';
+import { User, LoginForm, RegisterForm, ShippingAddress } from '@/types';
 
 export class UserService {
   private basePath = '/users';
 
-  async login(credentials: LoginFormData): Promise<{ user: User; token: string }> {
+  async login(credentials: LoginForm): Promise<{ user: User; token: string }> {
     const response = await apiClient.post<{ user: User; token: string }>('/auth/login', credentials);
     return response.data;
   }
 
-  async register(userData: RegisterFormData): Promise<{ user: User; token: string }> {
+  async register(userData: RegisterForm): Promise<{ user: User; token: string }> {
     const response = await apiClient.post<{ user: User; token: string }>('/auth/register', userData);
     return response.data;
   }
@@ -59,18 +59,18 @@ export class UserService {
     await apiClient.post('/auth/resend-verification');
   }
 
-  async getAddresses(): Promise<Address[]> {
-    const response = await apiClient.get<Address[]>(`${this.basePath}/me/addresses`);
+  async getAddresses(): Promise<ShippingAddress[]> {
+    const response = await apiClient.get<ShippingAddress[]>(`${this.basePath}/me/addresses`);
     return response.data;
   }
 
-  async addAddress(address: Omit<Address, 'id'>): Promise<Address> {
-    const response = await apiClient.post<Address>(`${this.basePath}/me/addresses`, address);
+  async addAddress(address: Omit<ShippingAddress, 'id'>): Promise<ShippingAddress> {
+    const response = await apiClient.post<ShippingAddress>(`${this.basePath}/me/addresses`, address);
     return response.data;
   }
 
-  async updateAddress(addressId: string, address: Partial<Address>): Promise<Address> {
-    const response = await apiClient.put<Address>(`${this.basePath}/me/addresses/${addressId}`, address);
+  async updateAddress(addressId: string, address: Partial<ShippingAddress>): Promise<ShippingAddress> {
+    const response = await apiClient.put<ShippingAddress>(`${this.basePath}/me/addresses/${addressId}`, address);
     return response.data;
   }
 
@@ -82,13 +82,13 @@ export class UserService {
     await apiClient.put(`${this.basePath}/me/addresses/${addressId}/default`);
   }
 
-  async getWishlist(): Promise<WishlistItem[]> {
-    const response = await apiClient.get<WishlistItem[]>(`${this.basePath}/me/wishlist`);
+  async getWishlist(): Promise<any[]> {
+    const response = await apiClient.get<any[]>(`${this.basePath}/me/wishlist`);
     return response.data;
   }
 
-  async addToWishlist(productId: string): Promise<WishlistItem> {
-    const response = await apiClient.post<WishlistItem>(`${this.basePath}/me/wishlist`, {
+  async addToWishlist(productId: string): Promise<any> {
+    const response = await apiClient.post<any>(`${this.basePath}/me/wishlist`, {
       productId,
     });
     return response.data;
