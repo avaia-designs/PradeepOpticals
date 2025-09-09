@@ -6,12 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import { AuthLayout, AuthForm, AuthInput, AuthButton } from '@/components/auth';
 import { useUserStore } from '@/stores/user-store';
 import { toast } from 'sonner';
 
@@ -46,111 +42,97 @@ export default function LoginPage() {
     }
   };
 
+  const loginFeatures = [
+    {
+      icon: <div className="w-2 h-2 bg-white rounded-full" />,
+      text: 'Premium quality frames'
+    },
+    {
+      icon: <div className="w-2 h-2 bg-white rounded-full" />,
+      text: 'Expert eye care consultation'
+    },
+    {
+      icon: <div className="w-2 h-2 bg-white rounded-full" />,
+      text: 'Free shipping & returns'
+    }
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Or{' '}
-            <Link
-              href="/auth/register"
-              className="font-medium text-primary hover:text-primary/80"
-            >
-              create a new account
-            </Link>
-          </p>
-        </div>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to your account to continue shopping"
+      heroTitle="Welcome back to premium eyewear"
+      heroSubtitle="Discover our exclusive collection of designer frames, prescription glasses, and sunglasses crafted with precision."
+      features={loginFeatures}
+      gradientFrom="from-blue-600"
+      gradientVia="via-purple-600"
+      gradientTo="to-indigo-700"
+      textColor="text-blue-100"
+      accentColor=""
+    >
+      <AuthForm
+        title="Sign in"
+        description="Enter your credentials to access your account"
+        error={error || undefined}
+        showSeparator={true}
+        separatorText="Or continue with"
+        footerText="Don't have an account?"
+        footerLink={{
+          text: 'Create one now',
+          href: '/auth/register'
+        }}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <AuthInput
+            id="email"
+            label="Email address"
+            type="email"
+            placeholder="Enter your email"
+            icon={Mail}
+            {...register('email')}
+            error={errors.email?.message}
+            required
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+          <AuthInput
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="Enter your password"
+            icon={Lock}
+            {...register('password')}
+            error={errors.password?.message}
+            showPasswordToggle={true}
+            showPassword={showPassword}
+            onTogglePassword={() => setShowPassword(!showPassword)}
+            required
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register('email')}
-                  className={errors.email ? 'border-red-500' : ''}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    {...register('password')}
-                    className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password.message}</p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <Link
-                    href="/auth/forgot-password"
-                    className="font-medium text-primary hover:text-primary/80"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <Link
+                href="/auth/forgot-password"
+                className="font-medium text-primary hover:text-primary/80 transition-colors"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign in'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+                Forgot your password?
+              </Link>
+            </div>
+          </div>
+
+          <AuthButton
+            type="submit"
+            isLoading={isLoading}
+            loadingText="Signing in..."
+            icon={ArrowRight}
+            gradientFrom="from-blue-600"
+            gradientTo="to-purple-600"
+            hoverFrom="from-blue-700"
+            hoverTo="to-purple-700"
+          >
+            Sign in
+          </AuthButton>
+        </form>
+      </AuthForm>
+    </AuthLayout>
   );
 }

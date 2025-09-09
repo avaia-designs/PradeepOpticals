@@ -6,12 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, User, Phone, ArrowRight, CheckCircle } from 'lucide-react';
+import { AuthLayout, AuthForm, AuthInput, AuthButton } from '@/components/auth';
 import { useUserStore } from '@/stores/user-store';
 import { toast } from 'sonner';
 
@@ -64,157 +60,121 @@ export default function RegisterPage() {
     }
   };
 
+  const registerFeatures = [
+    {
+      icon: <CheckCircle className="h-5 w-5 text-emerald-200" />,
+      text: 'Free eye consultation'
+    },
+    {
+      icon: <CheckCircle className="h-5 w-5 text-emerald-200" />,
+      text: 'Personalized frame recommendations'
+    },
+    {
+      icon: <CheckCircle className="h-5 w-5 text-emerald-200" />,
+      text: 'Exclusive member benefits'
+    }
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Create your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link
-              href="/auth/login"
-              className="font-medium text-primary hover:text-primary/80"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
+    <AuthLayout
+      title="Create your account"
+      subtitle="Join us to discover premium eyewear and expert care"
+      heroTitle="Join our premium eyewear community"
+      heroSubtitle="Experience the perfect blend of style, comfort, and precision with our curated collection of designer eyewear."
+      features={registerFeatures}
+      gradientFrom="from-emerald-600"
+      gradientVia="via-teal-600"
+      gradientTo="to-cyan-700"
+      textColor="text-emerald-100"
+      accentColor="text-emerald-200"
+    >
+      <AuthForm
+        title="Get started"
+        description="Create your account to start your eyewear journey"
+        error={error || undefined}
+        showSeparator={true}
+        separatorText="Already have an account?"
+        footerText=""
+        footerLink={{
+          text: 'Sign in to your account',
+          href: '/auth/login'
+        }}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <AuthInput
+            id="name"
+            label="Full Name"
+            type="text"
+            placeholder="Enter your full name"
+            icon={User}
+            {...register('name')}
+            error={errors.name?.message}
+            required
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Join Pradeep Opticals</CardTitle>
-            <CardDescription>
-              Create your account to start shopping for premium eyewear
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+          <AuthInput
+            id="email"
+            label="Email address"
+            type="email"
+            placeholder="Enter your email"
+            icon={Mail}
+            {...register('email')}
+            error={errors.email?.message}
+            required
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  {...register('name')}
-                  className={errors.name ? 'border-red-500' : ''}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
+          <AuthInput
+            id="phone"
+            label="Phone Number (Optional)"
+            type="tel"
+            placeholder="Enter your phone number"
+            icon={Phone}
+            {...register('phone')}
+            error={errors.phone?.message}
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register('email')}
-                  className={errors.email ? 'border-red-500' : ''}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message}</p>
-                )}
-              </div>
+          <AuthInput
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="Create a strong password"
+            icon={Lock}
+            {...register('password')}
+            error={errors.password?.message}
+            showPasswordToggle={true}
+            showPassword={showPassword}
+            onTogglePassword={() => setShowPassword(!showPassword)}
+            required
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  {...register('phone')}
-                  className={errors.phone ? 'border-red-500' : ''}
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-600">{errors.phone.message}</p>
-                )}
-              </div>
+          <AuthInput
+            id="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            placeholder="Confirm your password"
+            icon={Lock}
+            {...register('confirmPassword')}
+            error={errors.confirmPassword?.message}
+            showPasswordToggle={true}
+            showPassword={showConfirmPassword}
+            onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+            required
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a strong password"
-                    {...register('password')}
-                    className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    {...register('confirmPassword')}
-                    className={errors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create account'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          <AuthButton
+            type="submit"
+            isLoading={isLoading}
+            loadingText="Creating account..."
+            icon={ArrowRight}
+            gradientFrom="from-emerald-600"
+            gradientTo="to-teal-600"
+            hoverFrom="from-emerald-700"
+            hoverTo="to-teal-700"
+          >
+            Create account
+          </AuthButton>
+        </form>
+      </AuthForm>
+    </AuthLayout>
   );
 }
