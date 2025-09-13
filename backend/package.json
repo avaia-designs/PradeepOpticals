@@ -12,7 +12,10 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit",
-    "seed:admin": "bun run src/scripts/seed-admin.ts"
+    "seed:admin": "bun run src/scripts/seed-admin.ts",
+    "seed:products": "bun run src/scripts/seed-products.ts",
+    "seed:sample": "bun run src/scripts/seed-sample-data.ts",
+    "seed:all": "bun run src/scripts/seed-all.ts"
   },
   "keywords": ["express", "typescript", "mongodb", "ecommerce", "api"],
   "author": "Pradeep Opticals",

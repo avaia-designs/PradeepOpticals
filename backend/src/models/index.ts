@@ -9,6 +9,12 @@ export { UserRole } from '../types';
 export { Product } from './Product';
 export type { IProduct, IProductDocument } from './Product';
 
+export { Category } from './Category';
+export type { ICategory, ICategoryDocument } from './Category';
+
+export { Brand } from './Brand';
+export type { IBrand, IBrandDocument } from './Brand';
+
 export { Order, OrderStatus } from './Order';
 export type { IOrder, IOrderDocument, IOrderItem, IShippingAddress } from './Order';
 
