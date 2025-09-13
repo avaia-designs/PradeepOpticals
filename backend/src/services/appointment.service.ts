@@ -484,8 +484,9 @@ export class AppointmentService {
    * Generate unique appointment number
    */
   private static generateAppointmentNumber(): string {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substr(2, 5);
-    return `APT-${timestamp}-${random}`.toUpperCase();
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `APT-${dateStr}-${randomNum}`;
   }
 }

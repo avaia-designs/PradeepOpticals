@@ -25,7 +25,7 @@ const appointmentSchema = z.object({
   appointmentDate: z.date(),
   startTime: z.string().min(1, 'Start time is required'),
   endTime: z.string().min(1, 'End time is required'),
-  reason: z.string().min(10, 'Please provide a reason for your visit'),
+  reason: z.string().min(3, 'Please provide a reason for your visit (minimum 3 characters)'),
   notes: z.string().optional(),
 });
 
@@ -176,7 +176,7 @@ export default function BookAppointmentPage() {
                     <Label>Reason for Visit *</Label>
                     <Textarea
                       {...register('reason')}
-                      placeholder="Please describe the reason for your appointment..."
+                      placeholder="e.g., Eye examination, Frame fitting, Prescription update..."
                       className={errors.reason ? 'border-red-500' : ''}
                       rows={3}
                     />
@@ -221,7 +221,7 @@ export default function BookAppointmentPage() {
                         today.setHours(0, 0, 0, 0);
                         return date < today || date.getDay() === 0; // Disable past dates and Sundays
                       }}
-                      className="rounded-md border"
+                      className="rounded-md border min-w-72"
                     />
                     {errors.appointmentDate && (
                       <p className="text-sm text-red-600 mt-1">

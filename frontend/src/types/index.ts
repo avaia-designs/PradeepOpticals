@@ -25,6 +25,8 @@ export interface AuthResponse {
       phone?: string;
       dateOfBirth?: string;
     };
+    isActive: boolean;
+    createdAt: string;
   };
   token: string;
 }

@@ -23,6 +23,8 @@ interface AuthInputProps {
   onTogglePassword?: () => void;
   required?: boolean;
   disabled?: boolean;
+  // React Hook Form register props
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 export function AuthInput({
@@ -40,7 +42,8 @@ export function AuthInput({
   showPassword = false,
   onTogglePassword,
   required = false,
-  disabled = false
+  disabled = false,
+  ref
 }: AuthInputProps) {
   const inputType = showPasswordToggle && type === 'password' 
     ? (showPassword ? 'text' : 'password') 
@@ -62,6 +65,7 @@ export function AuthInput({
           onChange={onChange}
           onBlur={onBlur}
           name={name}
+          ref={ref}
           required={required}
           disabled={disabled}
           className={`pl-10 ${showPasswordToggle ? 'pr-10' : ''} ${

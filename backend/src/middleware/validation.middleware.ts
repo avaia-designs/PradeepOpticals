@@ -320,11 +320,11 @@ export const appointmentValidation = {
         'any.required': 'End time is required'
       }),
     reason: Joi.string()
-      .min(10)
+      .min(3)
       .max(500)
       .required()
       .messages({
-        'string.min': 'Appointment reason must be at least 10 characters long',
+        'string.min': 'Appointment reason must be at least 3 characters long',
         'string.max': 'Appointment reason cannot exceed 500 characters',
         'any.required': 'Appointment reason is required'
       }),

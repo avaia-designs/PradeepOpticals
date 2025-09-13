@@ -94,7 +94,7 @@ const appointmentSchema = new Schema<IAppointmentDocument>({
     type: String,
     required: [true, 'Appointment reason is required'],
     trim: true,
-    minlength: [10, 'Appointment reason must be at least 10 characters long'],
+    minlength: [3, 'Appointment reason must be at least 3 characters long'],
     maxlength: [500, 'Appointment reason cannot exceed 500 characters']
   },
   notes: {

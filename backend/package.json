@@ -11,7 +11,8 @@
     "test:watch": "bun test --watch",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "seed:admin": "bun run src/scripts/seed-admin.ts"
   },
   "keywords": ["express", "typescript", "mongodb", "ecommerce", "api"],
   "author": "Pradeep Opticals",
@@ -33,6 +34,7 @@
     "@types/cors": "^2.8.19",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.3.1",
+    "@types/bcryptjs": "^2.4.6",
     "typescript": "^5.9.2",
     "@types/bun": "^1.2.21"
   }
