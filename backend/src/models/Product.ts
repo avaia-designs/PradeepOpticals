@@ -7,9 +7,9 @@ export interface IProduct extends BaseModel {
   description: string;
   price: number;
   originalPrice?: number;
-  category: string;
-  subcategory?: string;
-  brand?: string;
+  category: mongoose.Types.ObjectId;
+  subcategory?: mongoose.Types.ObjectId;
+  brand?: mongoose.Types.ObjectId;
   images: string[];
   inventory: number;
   sku: string;
@@ -70,19 +70,19 @@ const productSchema = new Schema<IProductDocument>({
     }
   },
   category: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: 'Category',
     required: [true, 'Product category is required'],
-    trim: true,
     index: true
   },
   subcategory: {
-    type: String,
-    trim: true,
+    type: Schema.Types.ObjectId,
+    ref: 'Category',
     index: true
   },
   brand: {
-    type: String,
-    trim: true,
+    type: Schema.Types.ObjectId,
+    ref: 'Brand',
     index: true
   },
   images: [{

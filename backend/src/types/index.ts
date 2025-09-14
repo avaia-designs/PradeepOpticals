@@ -55,6 +55,49 @@ export interface PaginatedResult<T> {
   pagination: PaginationMeta;
 }
 
+// API Response Product interface (what frontend expects)
+export interface ApiProduct {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: {
+    _id: string;
+    name: string;
+  };
+  subcategory?: {
+    _id: string;
+    name: string;
+  };
+  brand?: {
+    _id: string;
+    name: string;
+  };
+  images: string[];
+  inventory: number;
+  sku: string;
+  specifications: {
+    material?: string;
+    color?: string;
+    size?: string;
+    weight?: number;
+    dimensions?: {
+      width?: number;
+      height?: number;
+      depth?: number;
+    };
+  };
+  tags: string[];
+  isActive: boolean;
+  featured: boolean;
+  rating?: number;
+  reviewCount: number;
+  discountPercentage?: number;
+  createdAt: string;
+  modifiedAt: string;
+}
+
 // Environment variables interface
 export interface EnvironmentConfig {
   PORT: number;

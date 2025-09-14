@@ -1,5 +1,5 @@
 import { apiClient } from '../api-client';
-import { Product, ProductFilters, PaginatedResult } from '@/types';
+import { Product, ProductFilters, PaginatedResult, ApiResponse } from '@/types';
 
 export class ProductService {
   /**
@@ -18,8 +18,13 @@ export class ProductService {
       ),
     });
 
-    const response = await apiClient.get<PaginatedResult<Product>>(`/products?${params}`);
-    return response.data;
+    const response = await apiClient.get<Product[]>(`/products?${params}`);
+    
+    // Extract data and pagination from the API response structure
+    return {
+      data: response.data,  // Backend returns products array directly in data
+      pagination: response.meta?.pagination || { page: 1, limit: 12, total: 0, pages: 0 }
+    };
   }
 
   /**

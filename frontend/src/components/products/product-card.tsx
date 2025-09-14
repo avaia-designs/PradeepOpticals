@@ -109,23 +109,37 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </Link>
           </div>
 
-          <div className="flex items-center space-x-1">
-            <div className="flex items-center">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={cn(
-                    'h-4 w-4',
-                    i < Math.floor(product.rating || 0)
-                      ? 'text-yellow-400 fill-yellow-400'
-                      : 'text-gray-300'
-                  )}
-                />
-              ))}
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              {product.category && (
+                <Badge variant="outline" className="text-xs">
+                  {product.category.name}
+                </Badge>
+              )}
+              {product.brand && (
+                <Badge variant="secondary" className="text-xs">
+                  {product.brand.name}
+                </Badge>
+              )}
             </div>
-            <span className="text-sm text-gray-600">
-              ({product.reviewCount})
-            </span>
+            <div className="flex items-center space-x-1">
+              <div className="flex items-center">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={cn(
+                      'h-4 w-4',
+                      i < Math.floor(product.rating || 0)
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
+                    )}
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-gray-600">
+                ({product.reviewCount})
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">

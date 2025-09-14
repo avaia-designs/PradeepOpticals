@@ -1,6 +1,7 @@
-import { Product, IProduct } from '../models';
+import mongoose from 'mongoose';
+import { Product, IProduct, Category, Brand } from '../models';
 import { Logger } from '../utils/logger';
-import { PaginatedResult } from '../types';
+import { PaginatedResult, ApiProduct } from '../types';
 
 export interface ProductFilters {
   category?: string;
@@ -70,13 +71,52 @@ export interface UpdateProductData {
 
 export class ProductService {
   /**
+   * Transform database product to API response format
+   */
+  private static transformProduct(product: any): ApiProduct {
+    return {
+      _id: product._id.toString(),
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: {
+        _id: product.category._id.toString(),
+        name: product.category.name
+      },
+      subcategory: product.subcategory ? {
+        _id: product.subcategory._id.toString(),
+        name: product.subcategory.name
+      } : undefined,
+      brand: product.brand ? {
+        _id: product.brand._id.toString(),
+        name: product.brand.name
+      } : undefined,
+      images: product.images,
+      inventory: product.inventory,
+      sku: product.sku,
+      specifications: product.specifications,
+      tags: product.tags,
+      isActive: product.isActive,
+      featured: product.featured,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      createdAt: product.createdAt.toISOString(),
+      modifiedAt: product.modifiedAt.toISOString(),
+      discountPercentage: product.originalPrice && product.price < product.originalPrice
+        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+        : undefined
+    };
+  }
+
+  /**
    * Get all products with filtering and pagination
    */
   static async getProducts(
     page: number = 1,
     limit: number = 12,
     filters: ProductFilters = {}
-  ): Promise<PaginatedResult<IProduct>> {
+  ): Promise<PaginatedResult<ApiProduct>> {
     try {
       Logger.info('Fetching products', { page, limit, filters });
 
@@ -85,15 +125,36 @@ export class ProductService {
 
       // Apply filters
       if (filters.category) {
-        query.category = filters.category;
+        // Find category by name and get its ID
+        const category = await Category.findOne({ name: filters.category, isActive: true }).select('_id');
+        if (category) {
+          query.category = category._id;
+        } else {
+          // If category not found, return empty results
+          query.category = new mongoose.Types.ObjectId('000000000000000000000000');
+        }
       }
 
       if (filters.subcategory) {
-        query.subcategory = filters.subcategory;
+        // Find subcategory by name and get its ID
+        const subcategory = await Category.findOne({ name: filters.subcategory, isActive: true }).select('_id');
+        if (subcategory) {
+          query.subcategory = subcategory._id;
+        } else {
+          // If subcategory not found, return empty results
+          query.subcategory = new mongoose.Types.ObjectId('000000000000000000000000');
+        }
       }
 
       if (filters.brand) {
-        query.brand = filters.brand;
+        // Find brand by name and get its ID
+        const brand = await Brand.findOne({ name: filters.brand, isActive: true }).select('_id');
+        if (brand) {
+          query.brand = brand._id;
+        } else {
+          // If brand not found, return empty results
+          query.brand = new mongoose.Types.ObjectId('000000000000000000000000');
+        }
       }
 
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
@@ -132,6 +193,8 @@ export class ProductService {
 
       const [products, total] = await Promise.all([
         Product.find(query)
+          .populate('category', 'name')
+          .populate('brand', 'name')
           .select('-__v')
           .sort(sort)
           .skip(skip)
@@ -141,8 +204,11 @@ export class ProductService {
         Product.countDocuments(query).exec()
       ]);
 
-      const result: PaginatedResult<IProduct> = {
-        data: products,
+      // Transform products to API format
+      const transformedProducts = products.map(product => this.transformProduct(product));
+
+      const result: PaginatedResult<ApiProduct> = {
+        data: transformedProducts,
         pagination: {
           page,
           limit,
@@ -162,18 +228,24 @@ export class ProductService {
   /**
    * Get product by ID
    */
-  static async getProductById(id: string): Promise<IProduct> {
+  static async getProductById(id: string): Promise<ApiProduct> {
     try {
       Logger.info('Fetching product by ID', { productId: id });
 
-      const product = await Product.findById(id).lean().exec();
+      const product = await Product.findById(id)
+        .populate('category', 'name')
+        .populate('brand', 'name')
+        .lean()
+        .exec();
 
       if (!product) {
         throw new Error('Product not found');
       }
 
+      const transformedProduct = this.transformProduct(product);
+
       Logger.info('Product fetched successfully', { productId: id });
-      return product;
+      return transformedProduct;
     } catch (error) {
       Logger.error('Failed to fetch product', error as Error, { productId: id });
       throw error;
@@ -183,7 +255,7 @@ export class ProductService {
   /**
    * Create new product
    */
-  static async createProduct(data: CreateProductData): Promise<IProduct> {
+  static async createProduct(data: CreateProductData): Promise<ApiProduct> {
     try {
       Logger.info('Creating new product', { name: data.name, sku: data.sku });
 
@@ -196,8 +268,21 @@ export class ProductService {
       const product = new Product(data);
       await product.save();
 
+      // Fetch the created product with populated references
+      const createdProduct = await Product.findById(product._id)
+        .populate('category', 'name')
+        .populate('brand', 'name')
+        .lean()
+        .exec();
+
+      if (!createdProduct) {
+        throw new Error('Failed to fetch created product');
+      }
+
+      const transformedProduct = this.transformProduct(createdProduct);
+
       Logger.info('Product created successfully', { productId: product._id, sku: data.sku });
-      return product;
+      return transformedProduct;
     } catch (error) {
       Logger.error('Failed to create product', error as Error);
       throw error;
@@ -207,7 +292,7 @@ export class ProductService {
   /**
    * Update product
    */
-  static async updateProduct(id: string, data: UpdateProductData): Promise<IProduct> {
+  static async updateProduct(id: string, data: UpdateProductData): Promise<ApiProduct> {
     try {
       Logger.info('Updating product', { productId: id });
 
@@ -227,8 +312,21 @@ export class ProductService {
       Object.assign(product, data);
       await product.save();
 
+      // Fetch the updated product with populated references
+      const updatedProduct = await Product.findById(id)
+        .populate('category', 'name')
+        .populate('brand', 'name')
+        .lean()
+        .exec();
+
+      if (!updatedProduct) {
+        throw new Error('Failed to fetch updated product');
+      }
+
+      const transformedProduct = this.transformProduct(updatedProduct);
+
       Logger.info('Product updated successfully', { productId: id });
-      return product;
+      return transformedProduct;
     } catch (error) {
       Logger.error('Failed to update product', error as Error, { productId: id });
       throw error;
@@ -264,10 +362,16 @@ export class ProductService {
     try {
       Logger.info('Fetching product categories');
 
-      const categories = await Product.distinct('category', { isActive: true });
+      const categories = await Category.find({ isActive: true })
+        .select('name')
+        .sort({ name: 1 })
+        .lean()
+        .exec();
       
-      Logger.info('Categories fetched successfully', { count: categories.length });
-      return categories;
+      const categoryNames = categories.map(cat => cat.name);
+      
+      Logger.info('Categories fetched successfully', { count: categoryNames.length });
+      return categoryNames;
     } catch (error) {
       Logger.error('Failed to fetch categories', error as Error);
       throw error;
@@ -281,10 +385,16 @@ export class ProductService {
     try {
       Logger.info('Fetching product brands');
 
-      const brands = await Product.distinct('brand', { isActive: true, brand: { $exists: true, $ne: null } });
+      const brands = await Brand.find({ isActive: true })
+        .select('name')
+        .sort({ name: 1 })
+        .lean()
+        .exec();
       
-      Logger.info('Brands fetched successfully', { count: brands.length });
-      return brands;
+      const brandNames = brands.map(brand => brand.name);
+      
+      Logger.info('Brands fetched successfully', { count: brandNames.length });
+      return brandNames;
     } catch (error) {
       Logger.error('Failed to fetch brands', error as Error);
       throw error;
@@ -294,18 +404,23 @@ export class ProductService {
   /**
    * Get featured products
    */
-  static async getFeaturedProducts(limit: number = 8): Promise<IProduct[]> {
+  static async getFeaturedProducts(limit: number = 8): Promise<ApiProduct[]> {
     try {
       Logger.info('Fetching featured products', { limit });
 
       const products = await Product.find({ featured: true, isActive: true })
+        .populate('category', 'name')
+        .populate('brand', 'name')
         .sort({ createdAt: -1 })
         .limit(limit)
         .lean()
         .exec();
 
+      // Transform products to API format
+      const transformedProducts = products.map(product => this.transformProduct(product));
+
       Logger.info('Featured products fetched successfully', { count: products.length });
-      return products;
+      return transformedProducts;
     } catch (error) {
       Logger.error('Failed to fetch featured products', error as Error);
       throw error;
@@ -324,10 +439,10 @@ export class ProductService {
         throw new Error('Product not found');
       }
 
-      const success = product.updateInventory(quantity);
-      if (!success) {
+      if (product.inventory + quantity < 0) {
         throw new Error('Insufficient inventory');
       }
+      product.inventory += quantity;
 
       await product.save();
 

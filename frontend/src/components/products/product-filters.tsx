@@ -130,7 +130,7 @@ export function ProductFilters({ filters, onFilterChange }: ProductFiltersProps)
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((category) => (
+              {categories?.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -155,7 +155,7 @@ export function ProductFilters({ filters, onFilterChange }: ProductFiltersProps)
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {brands.map((brand) => (
+              {brands?.map((brand) => (
                 <SelectItem key={brand} value={brand}>
                   {brand}
                 </SelectItem>

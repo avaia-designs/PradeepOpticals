@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/products/product-card';
 import { ProductFilters } from '@/components/products/product-filters';
 import { ProductSort } from '@/components/products/product-sort';
-import { Pagination } from '@/components/ui/pagination';
+import { CustomPagination as Pagination } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductService } from '@/lib/services/product.service';
 import { Product, ProductFilters as ProductFiltersType } from '@/types';
@@ -33,7 +33,7 @@ export default function ProductsPage() {
     sortOrder: (searchParams.get('sortOrder') as any) || 'desc',
   });
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       const result = await ProductService.getProducts(
@@ -49,11 +49,11 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, filters]);
 
   useEffect(() => {
     loadProducts();
-  }, [pagination?.page, filters]);
+  }, [loadProducts]);
 
   const handleFilterChange = (newFilters: Partial<ProductFiltersType>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));

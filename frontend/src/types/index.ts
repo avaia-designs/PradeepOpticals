@@ -38,9 +38,18 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  category: string;
-  subcategory?: string;
-  brand?: string;
+  category: {
+    _id: string;
+    name: string;
+  };
+  subcategory?: {
+    _id: string;
+    name: string;
+  };
+  brand?: {
+    _id: string;
+    name: string;
+  };
   images: string[];
   inventory: number;
   sku: string;

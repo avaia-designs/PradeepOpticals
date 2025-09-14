@@ -16,8 +16,8 @@ interface SeedProduct {
   description: string;
   price: number;
   originalPrice?: number;
-  category: string;
-  brand: string;
+  categorySlug: string;
+  brandSlug: string;
   images: string[];
   inventory: number;
   sku: string;
@@ -67,8 +67,8 @@ const PRODUCTS: SeedProduct[] = [
     description: 'Timeless black acetate eyeglasses with a modern rectangular frame. Perfect for everyday wear and professional settings.',
     price: 199.99,
     originalPrice: 249.99,
-    category: 'eyeglasses',
-    brand: 'ray-ban',
+    categorySlug: 'eyeglasses',
+    brandSlug: 'ray-ban',
     images: [
       'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&h=600&fit=crop'
@@ -93,8 +93,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Tortoise Shell Eyeglasses',
     description: 'Elegant tortoise shell pattern eyeglasses with a vintage-inspired round frame. Adds sophistication to any look.',
     price: 179.99,
-    category: 'eyeglasses',
-    brand: 'warby-parker',
+    categorySlug: 'eyeglasses',
+    brandSlug: 'warby-parker',
     images: [
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop'
@@ -118,8 +118,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Blue Light Blocking Glasses',
     description: 'Modern blue light filtering glasses designed to reduce eye strain from digital screens. Clear lenses with subtle blue tint.',
     price: 89.99,
-    category: 'computer-glasses',
-    brand: 'warby-parker',
+    categorySlug: 'computer-glasses',
+    brandSlug: 'warby-parker',
     images: [
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop'
@@ -145,8 +145,8 @@ const PRODUCTS: SeedProduct[] = [
     description: 'Classic aviator sunglasses with gradient lenses and metal frame. Perfect for outdoor activities and driving.',
     price: 299.99,
     originalPrice: 399.99,
-    category: 'sunglasses',
-    brand: 'ray-ban',
+    categorySlug: 'sunglasses',
+    brandSlug: 'ray-ban',
     images: [
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800&h=600&fit=crop'
@@ -171,8 +171,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Sport Sunglasses',
     description: 'High-performance sport sunglasses with polarized lenses and wrap-around design. Ideal for cycling, running, and outdoor sports.',
     price: 199.99,
-    category: 'sunglasses',
-    brand: 'oakley',
+    categorySlug: 'sunglasses',
+    brandSlug: 'oakley',
     images: [
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop'
@@ -196,8 +196,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Luxury Designer Sunglasses',
     description: 'Exquisite designer sunglasses with crystal accents and premium materials. A statement piece for the fashion-conscious.',
     price: 899.99,
-    category: 'sunglasses',
-    brand: 'gucci',
+    categorySlug: 'sunglasses',
+    brandSlug: 'gucci',
     images: [
       'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&h=600&fit=crop'
@@ -222,8 +222,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Classic Reading Glasses',
     description: 'Traditional reading glasses with magnification +1.50. Perfect for reading books, newspapers, and small print.',
     price: 49.99,
-    category: 'reading-glasses',
-    brand: 'warby-parker',
+    categorySlug: 'reading-glasses',
+    brandSlug: 'warby-parker',
     images: [
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop'
@@ -247,8 +247,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Fashion Reading Glasses',
     description: 'Stylish reading glasses with a modern cat-eye frame. Combines functionality with fashion-forward design.',
     price: 79.99,
-    category: 'reading-glasses',
-    brand: 'tom-ford',
+    categorySlug: 'reading-glasses',
+    brandSlug: 'tom-ford',
     images: [
       'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&h=600&fit=crop'
@@ -274,8 +274,8 @@ const PRODUCTS: SeedProduct[] = [
     description: 'Advanced progressive lens eyeglasses that provide clear vision at all distances. No more switching between multiple pairs.',
     price: 399.99,
     originalPrice: 499.99,
-    category: 'progressive-lenses',
-    brand: 'persol',
+    categorySlug: 'progressive-lenses',
+    brandSlug: 'persol',
     images: [
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop'
@@ -301,8 +301,8 @@ const PRODUCTS: SeedProduct[] = [
     name: 'Daily Contact Lenses (30 Pack)',
     description: 'Comfortable daily disposable contact lenses with UV protection. Perfect for all-day wear with excellent breathability.',
     price: 59.99,
-    category: 'contact-lenses',
-    brand: 'warby-parker',
+    categorySlug: 'contact-lenses',
+    brandSlug: 'warby-parker',
     images: [
       'https://images.unsplash.com/photo-1556306535-38febf6782e7?w=800&h=600&fit=crop',
       'https://images.unsplash.com/photo-1506629905607-0a5b5b5b5b5b?w=800&h=600&fit=crop'
@@ -391,29 +391,23 @@ async function createProducts(categoryMap: Map<string, string>, brandMap: Map<st
         continue;
       }
 
-      const categoryId = categoryMap.get(productData.category);
-      const brandId = brandMap.get(productData.brand);
+      const categoryId = categoryMap.get(productData.categorySlug);
+      const brandId = brandMap.get(productData.brandSlug);
 
       if (!categoryId || !brandId) {
-        Logger.error('Category or brand not found', { 
-          category: productData.category, 
-          brand: productData.brand 
+        Logger.error('Category or brand not found', undefined, { 
+          category: productData.categorySlug, 
+          brand: productData.brandSlug 
         });
         continue;
       }
 
+      const { categorySlug, brandSlug, ...productDataWithoutRefs } = productData;
+      
       const product = new Product({
-        ...productData,
-        category: {
-          _id: categoryId,
-          name: CATEGORIES.find(c => c.slug === productData.category)?.name || '',
-          slug: productData.category
-        },
-        brand: {
-          _id: brandId,
-          name: BRANDS.find(b => b.slug === productData.brand)?.name || '',
-          slug: productData.brand
-        }
+        ...productDataWithoutRefs,
+        category: categoryId,
+        brand: brandId
       });
 
       await product.save();
