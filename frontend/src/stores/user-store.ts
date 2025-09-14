@@ -17,6 +17,12 @@ interface UserState {
   refreshUser: () => Promise<void>;
   clearError: () => void;
   initialize: () => void;
+  
+  // Role-based helpers
+  isAdmin: () => boolean;
+  isStaff: () => boolean;
+  isCustomer: () => boolean;
+  isStaffOrAdmin: () => boolean;
 }
 
 export const useUserStore = create<UserState>()(
@@ -150,6 +156,27 @@ export const useUserStore = create<UserState>()(
             error: null,
           });
         }
+      },
+
+      // Role-based helpers
+      isAdmin: () => {
+        const { user } = get();
+        return user?.role === 'admin';
+      },
+
+      isStaff: () => {
+        const { user } = get();
+        return user?.role === 'staff';
+      },
+
+      isCustomer: () => {
+        const { user } = get();
+        return user?.role === 'user';
+      },
+
+      isStaffOrAdmin: () => {
+        const { user } = get();
+        return user?.role === 'staff' || user?.role === 'admin';
       },
     }),
     {

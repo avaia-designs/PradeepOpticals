@@ -28,7 +28,7 @@ export function Header({ className }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const totalItems = useTotalItems();
-  const { user, isAuthenticated, logout } = useUserStore();
+  const { user, isAuthenticated, logout, isAdmin, isStaff, isStaffOrAdmin } = useUserStore();
   const wishlistCount = 0; // TODO: Implement wishlist functionality
   
   const { data: suggestionsData, isLoading: isSuggestionsLoading } = useProductSuggestions(
@@ -269,8 +269,11 @@ export function Header({ className }: HeaderProps) {
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium">{user?.name}</p>
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  
+                  {/* Customer Menu Items */}
                   <DropdownMenuItem asChild>
                     <Link href="/account">Account Settings</Link>
                   </DropdownMenuItem>
@@ -278,11 +281,33 @@ export function Header({ className }: HeaderProps) {
                     <Link href="/orders">My Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/wishlist">Wishlist</Link>
+                    <Link href="/appointments">My Appointments</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/addresses">Addresses</Link>
+                    <Link href="/quotations">My Quotations</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/wishlist">Wishlist</Link>
+                  </DropdownMenuItem>
+                  
+                  {/* Staff/Admin Menu Items */}
+                  {isStaffOrAdmin() && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Staff Panel</DropdownMenuLabel>
+                      {isStaff() && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/staff">Staff Dashboard</Link>
+                        </DropdownMenuItem>
+                      )}
+                      {isAdmin() && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">Admin Dashboard</Link>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     Log out
