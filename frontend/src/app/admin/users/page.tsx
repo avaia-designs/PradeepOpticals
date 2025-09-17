@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -44,67 +45,114 @@ import {
   Mail,
   Phone,
   Calendar,
+  RefreshCw,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { Permission } from '@/lib/permissions';
+import { userService } from '@/lib/services/user-service';
+import { User as UserType } from '@/types';
+import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Mock data - replace with actual API calls
-  const users = [
-    {
-      _id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'user',
-      profile: {
-        avatar: null,
-        phone: '+1 234 567 8900',
-        dateOfBirth: '1990-01-01',
-      },
-      isActive: true,
-      createdAt: '2024-01-15T10:30:00Z',
-      lastLoginAt: '2024-12-01T14:30:00Z',
-    },
-    {
-      _id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'staff',
-      profile: {
-        avatar: null,
-        phone: '+1 234 567 8901',
-        dateOfBirth: '1985-05-15',
-      },
-      isActive: true,
-      createdAt: '2024-02-20T09:15:00Z',
-      lastLoginAt: '2024-12-01T16:45:00Z',
-    },
-    {
-      _id: '3',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      role: 'admin',
-      profile: {
-        avatar: null,
-        phone: '+1 234 567 8902',
-        dateOfBirth: '1980-12-10',
-      },
-      isActive: true,
-      createdAt: '2024-01-01T08:00:00Z',
-      lastLoginAt: '2024-12-01T18:20:00Z',
-    },
-  ];
+  // Load users from API
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const filters = {
+        search: searchTerm || undefined,
+        role: selectedRole === 'all' ? undefined : selectedRole,
+      };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    return matchesSearch && matchesRole;
-  });
+      const result = await userService.getAllUsers(pagination.page, pagination.limit, filters);
+      setUsers(result.data);
+      setPagination(result.pagination);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setError('Failed to load users');
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, searchTerm, selectedRole]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setPagination(prev => ({ ...prev, page: 1 }));
+      loadUsers();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, loadUsers]);
+
+  // Handle role filter change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+    loadUsers();
+  }, [selectedRole, loadUsers]);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(userId);
+      await userService.deleteUser(userId);
+      toast.success('User deleted successfully');
+      loadUsers(); // Reload users
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleCreateUser = async (userData: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'user' | 'staff' | 'admin';
+    profile?: {
+      phone?: string;
+      dateOfBirth?: string;
+    };
+  }) => {
+    try {
+      await userService.createUser(userData);
+      toast.success('User created successfully');
+      setIsCreateDialogOpen(false);
+      loadUsers(); // Reload users
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error('Failed to create user');
+    }
+  };
+
+  const handleRefresh = () => {
+    loadUsers();
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -145,14 +193,19 @@ export default function AdminUsersPage() {
             <h1 className="text-2xl font-bold text-gray-900">Users</h1>
             <p className="text-gray-600">Manage user accounts and permissions.</p>
           </div>
-          <RoleGuard permission={Permission.MANAGE_USERS}>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <RoleGuard permission={Permission.MANAGE_USERS}>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add User
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
@@ -189,6 +242,7 @@ export default function AdminUsersPage() {
               </DialogContent>
             </Dialog>
           </RoleGuard>
+          </div>
         </div>
 
         {/* Filters */}
@@ -229,107 +283,179 @@ export default function AdminUsersPage() {
         {/* Users Table */}
         <Card>
           <CardHeader>
-            <CardTitle>All Users ({filteredUsers.length})</CardTitle>
+            <CardTitle>All Users ({pagination.total})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user._id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.profile.avatar} />
-                          <AvatarFallback>
-                            {user.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getRoleColor(user.role)}>
-                        <span className="flex items-center gap-1">
-                          {getRoleIcon(user.role)}
-                          {user.role}
-                        </span>
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {user.profile.phone && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Phone className="h-3 w-3 mr-1" />
-                            {user.profile.phone}
-                          </div>
-                        )}
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {user.email}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(user.lastLoginAt || user.createdAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-500">
-                        {formatDate(user.createdAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Shield className="h-4 w-4 mr-2" />
-                            Change Role
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[200px]" />
+                      <Skeleton className="h-3 w-[150px]" />
+                    </div>
+                    <Skeleton className="h-6 w-[80px]" />
+                    <Skeleton className="h-4 w-[100px]" />
+                    <Skeleton className="h-4 w-[120px]" />
+                    <Skeleton className="h-4 w-[100px]" />
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">No users found</p>
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Login</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.profile?.avatar} />
+                            <AvatarFallback>
+                              {user.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRoleColor(user.role)}>
+                          <span className="flex items-center gap-1">
+                            {getRoleIcon(user.role)}
+                            {user.role}
+                          </span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {user.profile?.phone && (
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {user.profile.phone}
+                            </div>
+                          )}
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Mail className="h-3 w-3 mr-1" />
+                            {user.email}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {formatDate(user.lastLoginAt || user.createdAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-500">
+                          {formatDate(user.createdAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" disabled={isDeleting === user._id}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Change Role
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteUser(user._id)}
+                              disabled={isDeleting === user._id}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {isDeleting === user._id ? 'Deleting...' : 'Delete'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                    disabled={pagination.page === 1 || loading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={pagination.page === pagination.pages || loading}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AdminLayout>
   );

@@ -47,7 +47,7 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
 /**
  * Authorization middleware for specific roles
  */
-export const authorize = (...roles: string[]) => {
+export const authorize = (roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({

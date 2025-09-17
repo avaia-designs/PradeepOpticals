@@ -156,6 +156,63 @@ export class UserService {
   async deleteAvatar(): Promise<void> {
     await apiClient.delete(`${this.basePath}/me/avatar`);
   }
+
+  // Admin methods
+  async getAllUsers(page: number = 1, limit: number = 20, filters: {
+    role?: string;
+    search?: string;
+    isActive?: boolean;
+  } = {}): Promise<{
+    data: User[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== undefined)
+      ),
+    });
+
+    const response = await apiClient.get<User[]>(`/admin/users?${params}`);
+    return {
+      data: response.data,
+      pagination: response.meta?.pagination || { page: 1, limit: 20, total: 0, pages: 0 }
+    };
+  }
+
+  async getUserById(id: string): Promise<User> {
+    const response = await apiClient.get<User>(`/admin/users/${id}`);
+    return response.data;
+  }
+
+  async updateUser(id: string, userData: Partial<User>): Promise<User> {
+    const response = await apiClient.put<User>(`/admin/users/${id}`, userData);
+    return response.data;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await apiClient.delete(`/admin/users/${id}`);
+  }
+
+  async createUser(userData: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'user' | 'staff' | 'admin';
+    profile?: {
+      phone?: string;
+      dateOfBirth?: string;
+    };
+  }): Promise<User> {
+    const response = await apiClient.post<User>('/admin/users', userData);
+    return response.data;
+  }
 }
 
 export const userService = new UserService();
