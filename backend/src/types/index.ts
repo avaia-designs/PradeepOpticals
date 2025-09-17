@@ -24,6 +24,26 @@ export enum UserRole {
   ADMIN = 'admin'
 }
 
+// Appointment status enum
+export enum AppointmentStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed',
+  NO_SHOW = 'no_show'
+}
+
+// Order status enum
+export enum OrderStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded'
+}
+
 // API Response interfaces
 export interface SuccessResponse<T> {
   success: true;
@@ -43,6 +63,9 @@ export interface ErrorResponse {
   stack?: string;
 }
 
+// Generic API Response type
+export type ApiResponse<T = any> = SuccessResponse<T> | ErrorResponse;
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -53,6 +76,31 @@ export interface PaginationMeta {
 export interface PaginatedResult<T> {
   data: T[];
   pagination: PaginationMeta;
+}
+
+// Cart interface
+export interface Cart {
+  items: CartItem[];
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  discount: number;
+  totalAmount: number;
+  itemCount: number;
+}
+
+export interface CartItem {
+  productId: string;
+  productName: string;
+  productImage: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  specifications?: {
+    material?: string;
+    color?: string;
+    size?: string;
+  };
 }
 
 // API Response Product interface (what frontend expects)

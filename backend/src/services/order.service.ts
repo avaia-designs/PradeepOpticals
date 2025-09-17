@@ -1,10 +1,10 @@
-import { Order, OrderItem, IOrder } from '../models';
+import { Order, IOrderItem, IOrder } from '../models';
 import { Cart, PaginatedResult, OrderStatus } from '../types';
 import { Logger } from '../utils/logger';
 
 export interface CreateOrderData {
   userId: string;
-  items: OrderItem[];
+  items: IOrderItem[];
   subtotal: number;
   tax: number;
   shipping: number;
@@ -63,7 +63,7 @@ export class OrderService {
       const orderNumber = this.generateOrderNumber();
 
       // Convert cart items to order items
-      const orderItems: OrderItem[] = cart.items.map(item => ({
+      const orderItems: IOrderItem[] = cart.items.map(item => ({
         productId: item.productId,
         productName: item.productName,
         productImage: item.productImage,
@@ -292,7 +292,7 @@ export class OrderService {
         throw new Error('Order cannot be cancelled');
       }
 
-      order.status = 'cancelled';
+      order.status = OrderStatus.CANCELLED;
       order.cancelledAt = new Date();
       if (reason) {
         order.cancelledReason = reason;

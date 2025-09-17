@@ -1,6 +1,7 @@
-import { Appointment, IAppointmentDocument, IAppointment } from '../models';
+import { Appointment, IAppointmentDocument, IAppointment, ShopSettings } from '../models';
 import { PaginatedResult, AppointmentStatus } from '../types';
 import { Logger } from '../utils/logger';
+import { NotificationService } from './notification.service';
 
 export interface CreateAppointmentData {
   userId: string;
@@ -244,11 +245,29 @@ export class AppointmentService {
         throw new Error('Only pending appointments can be confirmed');
       }
 
-      appointment.status = 'confirmed';
+      appointment.status = AppointmentStatus.CONFIRMED;
       appointment.staffId = staffId;
       appointment.confirmedAt = new Date();
 
       await appointment.save();
+
+      // Create notification for customer
+      try {
+        await NotificationService.createAppointmentConfirmationNotification(
+          appointment.userId,
+          {
+            appointmentNumber: appointment.appointmentNumber,
+            appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
+            startTime: appointment.startTime,
+            endTime: appointment.endTime
+          }
+        );
+      } catch (notificationError) {
+        Logger.error('Failed to create appointment confirmation notification', notificationError as Error, {
+          appointmentId: id,
+          userId: appointment.userId
+        });
+      }
 
       Logger.info('Appointment confirmed successfully', { appointmentId: id, staffId });
       return appointment;
@@ -274,7 +293,7 @@ export class AppointmentService {
         throw new Error('Only pending appointments can be rejected');
       }
 
-      appointment.status = 'cancelled';
+      appointment.status = AppointmentStatus.CANCELLED;
       appointment.cancelledAt = new Date();
       if (reason) {
         appointment.cancelledReason = reason;
@@ -306,13 +325,32 @@ export class AppointmentService {
         throw new Error('Appointment cannot be cancelled');
       }
 
-      appointment.status = 'cancelled';
+      appointment.status = AppointmentStatus.CANCELLED;
       appointment.cancelledAt = new Date();
       if (reason) {
         appointment.cancelledReason = reason;
       }
 
       await appointment.save();
+
+      // Create notification for customer
+      try {
+        await NotificationService.createAppointmentCancellationNotification(
+          appointment.userId,
+          {
+            appointmentNumber: appointment.appointmentNumber,
+            appointmentDate: appointment.appointmentDate.toISOString().split('T')[0],
+            startTime: appointment.startTime,
+            endTime: appointment.endTime,
+            reason
+          }
+        );
+      } catch (notificationError) {
+        Logger.error('Failed to create appointment cancellation notification', notificationError as Error, {
+          appointmentId: id,
+          userId: appointment.userId
+        });
+      }
 
       Logger.info('Appointment cancelled successfully', { appointmentId: id });
       return appointment;
@@ -338,7 +376,7 @@ export class AppointmentService {
         throw new Error('Only confirmed appointments can be completed');
       }
 
-      appointment.status = 'completed';
+      appointment.status = AppointmentStatus.COMPLETED;
       appointment.completedAt = new Date();
 
       await appointment.save();

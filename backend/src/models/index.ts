@@ -20,3 +20,12 @@ export type { IOrder, IOrderDocument, IOrderItem, IShippingAddress } from './Ord
 
 export { Appointment, AppointmentStatus } from './Appointment';
 export type { IAppointment, IAppointmentDocument } from './Appointment';
+
+export { Quotation, QuotationStatus } from './Quotation';
+export type { IQuotation, IQuotationDocument, IQuotationItem } from './Quotation';
+
+export { ShopSettings } from './ShopSettings';
+export type { IShopSettings, IShopSettingsDocument } from './ShopSettings';
+
+export { Notification, NotificationType, NotificationPriority } from './Notification';
+export type { INotification, INotificationDocument } from './Notification';
