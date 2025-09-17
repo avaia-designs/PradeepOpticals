@@ -67,6 +67,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
+        suppressHydrationWarning
       >
         <QueryProvider>
           <MainLayout>

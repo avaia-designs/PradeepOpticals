@@ -33,10 +33,15 @@ export class OrderService {
     page: number = 1,
     limit: number = 10
   ): Promise<PaginatedResult<Order>> {
-    const response = await apiClient.get<PaginatedResult<Order>>(
+    const response = await apiClient.get<Order[]>(
       `/orders?page=${page}&limit=${limit}`
     );
-    return response.data;
+    
+    // Extract data and pagination from the API response structure
+    return {
+      data: response.data,  // Backend returns orders array in data
+      pagination: response.meta?.pagination || { page: 1, limit: 10, total: 0, pages: 0 }
+    };
   }
 
   /**

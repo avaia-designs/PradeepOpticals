@@ -22,7 +22,7 @@ export class ProductService {
     
     // Extract data and pagination from the API response structure
     return {
-      data: response.data,  // Backend returns products array directly in data
+      data: response.data,  // Backend returns products array in data
       pagination: response.meta?.pagination || { page: 1, limit: 12, total: 0, pages: 0 }
     };
   }
