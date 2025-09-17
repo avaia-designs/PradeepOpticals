@@ -131,4 +131,156 @@ export class ProductService {
     // For now, we'll get featured products as a fallback
     return this.getFeaturedProducts(limit);
   }
+
+  // Admin/Staff methods
+  /**
+   * Create new product (Admin/Staff only)
+   */
+  static async createProduct(productData: {
+    name: string;
+    description: string;
+    price: number;
+    originalPrice?: number;
+    category: string;
+    subcategory?: string;
+    brand?: string;
+    images: string[];
+    inventory: number;
+    sku: string;
+    specifications?: {
+      material?: string;
+      color?: string;
+      size?: string;
+      weight?: number;
+      dimensions?: {
+        width?: number;
+        height?: number;
+        depth?: number;
+      };
+    };
+    tags?: string[];
+    featured?: boolean;
+  }): Promise<Product> {
+    try {
+      const response = await apiClient.post<Product>('/products', productData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update product (Admin/Staff only)
+   */
+  static async updateProduct(
+    id: string, 
+    productData: Partial<{
+      name: string;
+      description: string;
+      price: number;
+      originalPrice?: number;
+      category: string;
+      subcategory?: string;
+      brand?: string;
+      images: string[];
+      inventory: number;
+      sku: string;
+      specifications?: {
+        material?: string;
+        color?: string;
+        size?: string;
+        weight?: number;
+        dimensions?: {
+          width?: number;
+          height?: number;
+          depth?: number;
+        };
+      };
+      tags?: string[];
+      featured?: boolean;
+      isActive?: boolean;
+    }>
+  ): Promise<Product> {
+    try {
+      const response = await apiClient.put<Product>(`/products/${id}`, productData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete product (Admin/Staff only)
+   */
+  static async deleteProduct(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`/products/${id}`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle product active status (Admin/Staff only)
+   */
+  static async toggleProductStatus(id: string, isActive: boolean): Promise<Product> {
+    try {
+      const response = await apiClient.patch<Product>(`/products/${id}/status`, { isActive });
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling product status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update product inventory (Admin/Staff only)
+   */
+  static async updateInventory(id: string, inventory: number): Promise<Product> {
+    try {
+      const response = await apiClient.patch<Product>(`/products/${id}/inventory`, { inventory });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload product image (Admin/Staff only)
+   */
+  static async uploadProductImage(
+    productId: string, 
+    file: File, 
+    onProgress?: (progress: number) => void
+  ): Promise<{ url: string }> {
+    try {
+      const response = await apiClient.uploadFile<{ url: string }>(
+        `/products/${productId}/images`, 
+        file, 
+        onProgress
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading product image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete product image (Admin/Staff only)
+   */
+  static async deleteProductImage(productId: string, imageUrl: string): Promise<void> {
+    try {
+      await apiClient.delete(`/products/${productId}/images`, {
+        data: { imageUrl }
+      });
+    } catch (error) {
+      console.error('Error deleting product image:', error);
+      throw error;
+    }
+  }
 }
