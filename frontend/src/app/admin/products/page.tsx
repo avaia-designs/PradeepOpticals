@@ -53,6 +53,7 @@ import { ProductService } from '@/lib/services/product.service';
 import { Product, ProductFilters } from '@/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { InventoryEditor, BulkInventoryDialog } from '@/components/products/inventory-editor';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,6 +77,8 @@ export default function AdminProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkInventoryDialogOpen, setIsBulkInventoryDialogOpen] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   // Load products from API
   const loadProducts = useCallback(async () => {
@@ -143,6 +146,30 @@ export default function AdminProductsPage() {
     loadProducts();
   };
 
+  const handleProductUpdate = (updatedProduct: Product) => {
+    setProducts(prev => 
+      prev.map(p => p._id === updatedProduct._id ? updatedProduct : p)
+    );
+  };
+
+  const handleBulkInventoryUpdate = (updatedProducts: Product[]) => {
+    setProducts(prev => 
+      prev.map(p => {
+        const updated = updatedProducts.find(up => up._id === p._id);
+        return updated || p;
+      })
+    );
+  };
+
+  const handleBulkInventory = () => {
+    const selectedProductsData = products.filter(p => selectedProducts.includes(p._id));
+    if (selectedProductsData.length === 0) {
+      toast.error('Please select products to update inventory');
+      return;
+    }
+    setIsBulkInventoryDialogOpen(true);
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -186,6 +213,14 @@ export default function AdminProductsPage() {
             <Button variant="outline" onClick={handleRefresh} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleBulkInventory}
+              disabled={selectedProducts.length === 0}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Bulk Inventory ({selectedProducts.length})
             </Button>
             <RoleGuard permission={Permission.MANAGE_INVENTORY}>
               <Button asChild>
@@ -346,10 +381,24 @@ export default function AdminProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.length === products.length && products.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProducts(products.map(p => p._id));
+                          } else {
+                            setSelectedProducts([]);
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                    </TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
+                    <TableHead>Inventory</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Featured</TableHead>
                     <TableHead>Created</TableHead>
@@ -358,7 +407,21 @@ export default function AdminProductsPage() {
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
-                    <TableRow key={product._id}>
+                    <TableRow key={product._id} className="group">
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProducts(prev => [...prev, product._id]);
+                            } else {
+                              setSelectedProducts(prev => prev.filter(id => id !== product._id));
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
@@ -397,10 +460,10 @@ export default function AdminProductsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {getStockIcon(product)}
-                          <span className="font-medium">{product.inventory}</span>
-                        </div>
+                        <InventoryEditor 
+                          product={product} 
+                          onUpdate={handleProductUpdate}
+                        />
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(product)}
@@ -519,6 +582,14 @@ export default function AdminProductsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Bulk Inventory Dialog */}
+        <BulkInventoryDialog
+          isOpen={isBulkInventoryDialogOpen}
+          onClose={() => setIsBulkInventoryDialogOpen(false)}
+          products={products.filter(p => selectedProducts.includes(p._id))}
+          onUpdate={handleBulkInventoryUpdate}
+        />
       </div>
     </AdminLayout>
   );
