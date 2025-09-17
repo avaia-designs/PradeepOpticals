@@ -49,11 +49,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <Link href={`/products/${product._id}`}>
           <div className="relative aspect-square">
             <Image
-              src={product.images[0] || '/placeholder-image.jpg'}
+              src={product.images?.[0] || '/placeholder-image.svg'}
               alt={product.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder-image.svg';
+              }}
             />
             {discountPercentage > 0 && (
               <Badge

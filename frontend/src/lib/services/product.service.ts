@@ -10,53 +10,78 @@ export class ProductService {
     limit: number = 12,
     filters: ProductFilters = {}
   ): Promise<PaginatedResult<Product>> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== undefined)
-      ),
-    });
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([_, value]) => value !== undefined)
+        ),
+      });
 
-    const response = await apiClient.get<Product[]>(`/products?${params}`);
-    
-    // Extract data and pagination from the API response structure
-    return {
-      data: response.data,  // Backend returns products array in data
-      pagination: response.meta?.pagination || { page: 1, limit: 12, total: 0, pages: 0 }
-    };
+      const response = await apiClient.get<Product[]>(`/products?${params}`);
+      
+      // Extract data and pagination from the API response structure
+      return {
+        data: response.data,  // Backend returns products array in data
+        pagination: response.meta?.pagination || { page: 1, limit: 12, total: 0, pages: 0 }
+      };
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
+    }
   }
 
   /**
    * Get product by ID
    */
   static async getProductById(id: string): Promise<Product> {
-    const response = await apiClient.get<Product>(`/products/${id}`);
-    return response.data;
+    try {
+      const response = await apiClient.get<Product>(`/products/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      throw error;
+    }
   }
 
   /**
    * Get product categories
    */
   static async getCategories(): Promise<string[]> {
-    const response = await apiClient.get<string[]>('/products/categories');
-    return response.data;
+    try {
+      const response = await apiClient.get<string[]>('/products/categories');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
   }
 
   /**
    * Get product brands
    */
   static async getBrands(): Promise<string[]> {
-    const response = await apiClient.get<string[]>('/products/brands');
-    return response.data;
+    try {
+      const response = await apiClient.get<string[]>('/products/brands');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      throw error;
+    }
   }
 
   /**
    * Get featured products
    */
   static async getFeaturedProducts(limit: number = 8): Promise<Product[]> {
-    const response = await apiClient.get<Product[]>(`/products/featured?limit=${limit}`);
-    return response.data;
+    try {
+      const response = await apiClient.get<Product[]>(`/products/featured?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+      throw error;
+    }
   }
 
   /**
