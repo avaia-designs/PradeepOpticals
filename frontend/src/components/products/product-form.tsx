@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { Product } from '@/types';
 import { ProductService } from '@/lib/services/product.service';
+import { FileUploadService } from '@/lib/services/file-upload.service';
 import { toast } from 'sonner';
 
 // Form validation schema
@@ -48,10 +49,10 @@ const productFormSchema = z.object({
   price: z.number().min(0, 'Price must be positive'),
   originalPrice: z.number().min(0, 'Original price must be positive').optional(),
   category: z.string().min(1, 'Category is required'),
-  subcategory: z.string().optional(),
   brand: z.string().optional(),
   sku: z.string().min(1, 'SKU is required'),
   inventory: z.number().min(0, 'Inventory must be non-negative'),
+  // Specification fields for form handling
   material: z.string().optional(),
   color: z.string().optional(),
   size: z.string().optional(),
@@ -59,7 +60,7 @@ const productFormSchema = z.object({
   width: z.number().min(0, 'Width must be positive').optional(),
   height: z.number().min(0, 'Height must be positive').optional(),
   depth: z.number().min(0, 'Depth must be positive').optional(),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).default([]),
   featured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
@@ -79,6 +80,8 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
   const [brands, setBrands] = useState<{ _id: string; name: string }[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   const {
     register,
@@ -87,7 +90,7 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
     setValue,
     watch,
     reset,
-  } = useForm<ProductFormData>({
+  } = useForm({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: product?.name || '',
@@ -95,7 +98,6 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
       price: product?.price || 0,
       originalPrice: product?.originalPrice || undefined,
       category: product?.category._id || '',
-      subcategory: product?.subcategory?._id || '',
       brand: product?.brand?._id || '',
       sku: product?.sku || '',
       inventory: product?.inventory || 0,
@@ -133,41 +135,91 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
     loadData();
   }, []);
 
-  const handleImageUpload = async (files: FileList) => {
-    if (!product?._id) {
-      toast.error('Please save the product first before uploading images');
-      return;
-    }
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => FileUploadService.revokePreviewUrl(url));
+    };
+  }, [previewUrls]);
 
-    setUploadingImages(true);
-    try {
-      const uploadPromises = Array.from(files).map(file => 
-        ProductService.uploadProductImage(product._id, file)
-      );
-      
-      const results = await Promise.all(uploadPromises);
-      const newImageUrls = results.map(result => result.url);
-      
-      setImages(prev => [...prev, ...newImageUrls]);
-      toast.success('Images uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error('Failed to upload images');
-    } finally {
-      setUploadingImages(false);
+  const handleImageUpload = async (files: FileList) => {
+    const fileArray = Array.from(files);
+    
+    // For existing products, upload directly
+    if (product?._id) {
+      setUploadingImages(true);
+      try {
+        const uploadPromises = fileArray.map(file => 
+          ProductService.uploadProductImage(product._id, file)
+        );
+        
+        const results = await Promise.all(uploadPromises);
+        const newImageUrls = results.map(result => result.url);
+        
+        setImages(prev => [...prev, ...newImageUrls]);
+        toast.success('Images uploaded successfully');
+      } catch (error) {
+        console.error('Error uploading images:', error);
+        toast.error('Failed to upload images');
+      } finally {
+        setUploadingImages(false);
+      }
+    } else {
+      // For new products, store files temporarily and create previews
+      try {
+        // Validate files
+        fileArray.forEach(file => {
+          if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+          }
+          if (!file.type.startsWith('image/')) {
+            throw new Error(`File ${file.name} is not an image.`);
+          }
+        });
+
+        // Create preview URLs
+        const newPreviewUrls = fileArray.map(file => FileUploadService.createPreviewUrl(file));
+        
+        setPendingFiles(prev => [...prev, ...fileArray]);
+        setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+        
+        toast.success(`${fileArray.length} image(s) added for upload`);
+      } catch (error) {
+        console.error('Error adding images:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to add images');
+      }
     }
   };
 
-  const handleRemoveImage = async (imageUrl: string) => {
-    if (!product?._id) return;
+  const handleRemoveImage = async (imageUrl: string, index: number) => {
+    // Check if it's a preview URL (pending file)
+    if (previewUrls.includes(imageUrl)) {
+      // Remove from pending files and preview URLs
+      const newPendingFiles = [...pendingFiles];
+      const newPreviewUrls = [...previewUrls];
+      
+      // Revoke the preview URL to free memory
+      FileUploadService.revokePreviewUrl(imageUrl);
+      
+      newPendingFiles.splice(index, 1);
+      newPreviewUrls.splice(index, 1);
+      
+      setPendingFiles(newPendingFiles);
+      setPreviewUrls(newPreviewUrls);
+      toast.success('Image removed');
+      return;
+    }
 
-    try {
-      await ProductService.deleteProductImage(product._id, imageUrl);
-      setImages(prev => prev.filter(img => img !== imageUrl));
-      toast.success('Image removed successfully');
-    } catch (error) {
-      console.error('Error removing image:', error);
-      toast.error('Failed to remove image');
+    // For existing products, delete from server
+    if (product?._id) {
+      try {
+        await ProductService.deleteProductImage(product._id, imageUrl);
+        setImages(prev => prev.filter(img => img !== imageUrl));
+        toast.success('Image removed successfully');
+      } catch (error) {
+        console.error('Error removing image:', error);
+        toast.error('Failed to remove image');
+      }
     }
   };
 
@@ -186,9 +238,45 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
 
   const onSubmit = async (data: ProductFormData) => {
     try {
+      let finalImages = images;
+
+      // For new products, upload pending files first
+      if (!product?._id && pendingFiles.length > 0) {
+        setUploadingImages(true);
+        try {
+          const uploadedUrls = await FileUploadService.uploadProductImages(pendingFiles);
+          finalImages = [...images, ...uploadedUrls];
+          
+          // Clear pending files and preview URLs
+          pendingFiles.forEach((_, index) => {
+            FileUploadService.revokePreviewUrl(previewUrls[index]);
+          });
+          setPendingFiles([]);
+          setPreviewUrls([]);
+        } catch (error) {
+          console.error('Error uploading images:', error);
+          toast.error('Failed to upload images');
+          setUploadingImages(false);
+          return;
+        } finally {
+          setUploadingImages(false);
+        }
+      }
+
+      // Structure the data according to backend validation schema
       const productData = {
-        ...data,
-        images,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        originalPrice: data.originalPrice,
+        category: data.category,
+        brand: data.brand,
+        sku: data.sku,
+        inventory: data.inventory,
+        images: finalImages,
+        tags: data.tags,
+        featured: data.featured,
+        isActive: data.isActive,
         specifications: {
           material: data.material,
           color: data.color,
@@ -262,7 +350,7 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="category">Category *</Label>
                   <Select onValueChange={(value) => setValue('category', value)}>
@@ -280,17 +368,6 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
                   {errors.category && (
                     <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
                   )}
-                </div>
-                <div>
-                  <Label htmlFor="subcategory">Subcategory</Label>
-                  <Select onValueChange={(value) => setValue('subcategory', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subcategory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* TODO: Load subcategories based on selected category */}
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="brand">Brand</Label>
@@ -472,8 +549,9 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
+                {/* Existing images */}
                 {images.map((image, index) => (
-                  <div key={index} className="relative group">
+                  <div key={`existing-${index}`} className="relative group">
                     <img
                       src={image}
                       alt={`Product ${index + 1}`}
@@ -484,7 +562,30 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
                       variant="destructive"
                       size="sm"
                       className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleRemoveImage(image)}
+                      onClick={() => handleRemoveImage(image, index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                
+                {/* Preview images (pending uploads) */}
+                {previewUrls.map((previewUrl, index) => (
+                  <div key={`preview-${index}`} className="relative group">
+                    <img
+                      src={previewUrl}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-20 object-cover rounded-lg border-2 border-dashed border-blue-300"
+                    />
+                    <div className="absolute top-1 left-1 bg-blue-100 text-blue-800 text-xs px-1 py-0.5 rounded">
+                      Pending
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveImage(previewUrl, index)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -492,35 +593,35 @@ export function ProductForm({ product, onSave, onCancel, isLoading = false }: Pr
                 ))}
               </div>
               
-              {product?._id && (
-                <div>
-                  <input
-                    type="file"
-                    id="image-upload"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                    className="hidden"
-                    disabled={uploadingImages}
-                  />
-                  <Label
-                    htmlFor="image-upload"
-                    className="flex items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
-                  >
-                    {uploadingImages ? (
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-600">Uploading...</p>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">Upload Images</p>
-                      </div>
-                    )}
-                  </Label>
-                </div>
-              )}
+              <div>
+                <input
+                  type="file"
+                  id="image-upload"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                  className="hidden"
+                  disabled={uploadingImages}
+                />
+                <Label
+                  htmlFor="image-upload"
+                  className="flex items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+                >
+                  {uploadingImages ? (
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">Uploading...</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {product?._id ? 'Upload Images' : 'Add Images (will upload on save)'}
+                      </p>
+                    </div>
+                  )}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 

@@ -8,7 +8,6 @@ export interface IProduct extends BaseModel {
   price: number;
   originalPrice?: number;
   category: mongoose.Types.ObjectId;
-  subcategory?: mongoose.Types.ObjectId;
   brand?: mongoose.Types.ObjectId;
   images: string[];
   inventory: number;
@@ -73,11 +72,6 @@ const productSchema = new Schema<IProductDocument>({
     type: Schema.Types.ObjectId,
     ref: 'Category',
     required: [true, 'Product category is required'],
-    index: true
-  },
-  subcategory: {
-    type: Schema.Types.ObjectId,
-    ref: 'Category',
     index: true
   },
   brand: {

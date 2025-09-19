@@ -17,14 +17,10 @@ router.get('/brands', ProductController.getBrands);
 router.get('/featured', ProductController.getFeaturedProducts);
 router.get('/:id', ProductController.getProductById);
 
-// Protected routes (Staff/Admin only)
-router.use(authenticate);
-router.use(authorize('staff', 'admin'));
-
-// Product management routes
-router.post('/', validate(productValidation.create), ProductController.createProduct);
-router.put('/:id', validate(productValidation.update), ProductController.updateProduct);
-router.delete('/:id', ProductController.deleteProduct);
-router.put('/:id/inventory', ProductController.updateInventory);
+// Product management routes (Staff/Admin only)
+router.post('/', authenticate, authorize(['staff', 'admin']), validate(productValidation.create), ProductController.createProduct);
+router.put('/:id', authenticate, authorize(['staff', 'admin']), validate(productValidation.update), ProductController.updateProduct);
+router.delete('/:id', authenticate, authorize(['staff', 'admin']), ProductController.deleteProduct);
+router.put('/:id/inventory', authenticate, authorize(['staff', 'admin']), ProductController.updateInventory);
 
 export default router;

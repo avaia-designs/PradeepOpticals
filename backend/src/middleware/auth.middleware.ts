@@ -7,7 +7,7 @@ import { Logger } from '../utils/logger';
  * Authentication middleware
  * Verifies JWT token and attaches user to request
  */
-export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -25,7 +25,7 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
     const userData = await AuthService.verifyToken(token);
     
     // Attach user to request
-    req.user = {
+    (req as AuthenticatedRequest).user = {
       id: userData.id,
       email: userData.email,
       role: userData.role,
@@ -48,8 +48,9 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
  * Authorization middleware for specific roles
  */
 export const authorize = (roles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthenticatedRequest;
+    if (!authReq.user) {
       res.status(401).json({
         success: false,
         error: 'UNAUTHORIZED',
@@ -58,10 +59,10 @@ export const authorize = (roles: string[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(authReq.user.role)) {
       Logger.warn('Access denied - insufficient permissions', {
-        userId: req.user.id,
-        userRole: req.user.role,
+        userId: authReq.user.id,
+        userRole: authReq.user.role,
         requiredRoles: roles
       });
       
@@ -81,7 +82,7 @@ export const authorize = (roles: string[]) => {
  * Optional authentication middleware
  * Attaches user to request if token is present, but doesn't require it
  */
-export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -89,7 +90,7 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
       const token = authHeader.substring(7);
       const userData = await AuthService.verifyToken(token);
       
-      req.user = {
+      (req as AuthenticatedRequest).user = {
         id: userData.id,
         email: userData.email,
         role: userData.role,

@@ -5,7 +5,6 @@ import { PaginatedResult, ApiProduct } from '../types';
 
 export interface ProductFilters {
   category?: string;
-  subcategory?: string;
   brand?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -22,7 +21,6 @@ export interface CreateProductData {
   price: number;
   originalPrice?: number;
   category: string;
-  subcategory?: string;
   brand?: string;
   images: string[];
   inventory: number;
@@ -48,7 +46,6 @@ export interface UpdateProductData {
   price?: number;
   originalPrice?: number;
   category?: string;
-  subcategory?: string;
   brand?: string;
   images?: string[];
   inventory?: number;
@@ -84,10 +81,6 @@ export class ProductService {
         _id: product.category._id.toString(),
         name: product.category.name
       },
-      subcategory: product.subcategory ? {
-        _id: product.subcategory._id.toString(),
-        name: product.subcategory.name
-      } : undefined,
       brand: product.brand ? {
         _id: product.brand._id.toString(),
         name: product.brand.name
@@ -135,16 +128,6 @@ export class ProductService {
         }
       }
 
-      if (filters.subcategory) {
-        // Find subcategory by name and get its ID
-        const subcategory = await Category.findOne({ name: filters.subcategory, isActive: true }).select('_id');
-        if (subcategory) {
-          query.subcategory = subcategory._id;
-        } else {
-          // If subcategory not found, return empty results
-          query.subcategory = new mongoose.Types.ObjectId('000000000000000000000000');
-        }
-      }
 
       if (filters.brand) {
         // Find brand by name and get its ID
@@ -265,7 +248,60 @@ export class ProductService {
         throw new Error('Product with this SKU already exists');
       }
 
-      const product = new Product(data);
+      // Handle category - find or create by name
+      let categoryId: mongoose.Types.ObjectId;
+      if (mongoose.Types.ObjectId.isValid(data.category)) {
+        // If it's already an ObjectId, use it
+        categoryId = new mongoose.Types.ObjectId(data.category);
+      } else {
+        // If it's a string name, find or create the category
+        let category = await Category.findOne({ name: data.category });
+        if (!category) {
+          // Create new category if it doesn't exist
+          const slug = data.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          category = new Category({
+            name: data.category,
+            slug: slug,
+            description: `Category for ${data.category}`,
+            isActive: true
+          });
+          await category.save();
+        }
+        categoryId = category._id;
+      }
+
+      // Handle brand - find or create by name (if provided)
+      let brandId: mongoose.Types.ObjectId | undefined;
+      if (data.brand) {
+        if (mongoose.Types.ObjectId.isValid(data.brand)) {
+          // If it's already an ObjectId, use it
+          brandId = new mongoose.Types.ObjectId(data.brand);
+        } else {
+          // If it's a string name, find or create the brand
+          let brand = await Brand.findOne({ name: data.brand });
+          if (!brand) {
+            // Create new brand if it doesn't exist
+            const slug = data.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            brand = new Brand({
+              name: data.brand,
+              slug: slug,
+              description: `Brand: ${data.brand}`,
+              isActive: true
+            });
+            await brand.save();
+          }
+          brandId = brand._id;
+        }
+      }
+
+      // Create product with resolved ObjectIds
+      const productData = {
+        ...data,
+        category: categoryId,
+        brand: brandId
+      };
+
+      const product = new Product(productData);
       await product.save();
 
       // Fetch the created product with populated references

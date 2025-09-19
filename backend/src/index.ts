@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import { Config } from './utils/config';
 import { Logger } from './utils/logger';
 import { database } from './utils/database';
+import { S3Service } from './services/s3.service';
 import { EnvironmentConfig } from './types';
 import {
   corsMiddleware,
@@ -114,6 +115,10 @@ class Application {
     try {
       // Connect to database
       await database.connect();
+
+      // Initialize S3-compatible storage
+      S3Service.initialize();
+      await S3Service.ensureBucketExists();
 
       // Start HTTP server
       this.app.listen(this.config.PORT, () => {

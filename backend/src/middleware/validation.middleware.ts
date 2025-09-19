@@ -175,8 +175,6 @@ export const productValidation = {
       .messages({
         'any.required': 'Category is required'
       }),
-    subcategory: Joi.string()
-      .optional(),
     brand: Joi.string()
       .optional(),
     images: Joi.array()
@@ -216,6 +214,8 @@ export const productValidation = {
       .items(Joi.string())
       .optional(),
     featured: Joi.boolean()
+      .optional(),
+    isActive: Joi.boolean()
       .optional()
   }),
 
@@ -235,8 +235,6 @@ export const productValidation = {
       .min(0)
       .optional(),
     category: Joi.string()
-      .optional(),
-    subcategory: Joi.string()
       .optional(),
     brand: Joi.string()
       .optional(),

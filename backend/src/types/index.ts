@@ -9,7 +9,7 @@ export interface BaseModel {
 
 // Authenticated request interface
 export interface AuthenticatedRequest extends Request {
-  user: {
+  user?: {
     id: string;
     email: string;
     role: UserRole;
@@ -111,10 +111,6 @@ export interface ApiProduct {
   price: number;
   originalPrice?: number;
   category: {
-    _id: string;
-    name: string;
-  };
-  subcategory?: {
     _id: string;
     name: string;
   };

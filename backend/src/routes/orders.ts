@@ -12,27 +12,18 @@ const router = Router();
 // Public routes (no authentication required)
 // None for orders
 
-// Protected routes (authentication required)
-router.use(authenticate);
+// User order routes (authentication required)
+router.post('/checkout', authenticate, OrderController.checkout);
+router.get('/', authenticate, OrderController.getUserOrders);
+router.get('/:id', authenticate, OrderController.getOrderById);
+router.put('/:id/cancel', authenticate, OrderController.cancelOrder);
 
-// User order routes
-router.post('/checkout', OrderController.checkout);
-router.get('/', OrderController.getUserOrders);
-router.get('/:id', OrderController.getOrderById);
-router.put('/:id/cancel', OrderController.cancelOrder);
+// Staff order management routes (Staff/Admin only)
+router.post('/walk-in', authenticate, authorize(['staff', 'admin']), OrderController.createWalkInOrder);
+router.get('/all', authenticate, authorize(['staff', 'admin']), OrderController.getAllOrders);
+router.put('/:id', authenticate, authorize(['staff', 'admin']), OrderController.updateOrder);
 
-// Staff/Admin only routes
-router.use(authorize('staff', 'admin'));
-
-// Staff order management routes
-router.post('/walk-in', OrderController.createWalkInOrder);
-router.get('/all', OrderController.getAllOrders);
-router.put('/:id', OrderController.updateOrder);
-
-// Admin only routes
-router.use(authorize('admin'));
-
-// Admin order statistics
-router.get('/statistics', OrderController.getOrderStatistics);
+// Admin order statistics (Admin only)
+router.get('/statistics', authenticate, authorize(['admin']), OrderController.getOrderStatistics);
 
 export default router;

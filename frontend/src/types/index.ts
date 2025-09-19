@@ -42,10 +42,6 @@ export interface Product {
     _id: string;
     name: string;
   };
-  subcategory?: {
-    _id: string;
-    name: string;
-  };
   brand?: {
     _id: string;
     name: string;
@@ -76,7 +72,6 @@ export interface Product {
 
 export interface ProductFilters {
   category?: string;
-  subcategory?: string;
   brand?: string;
   minPrice?: number;
   maxPrice?: number;

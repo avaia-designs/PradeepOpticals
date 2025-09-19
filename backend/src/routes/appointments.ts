@@ -13,29 +13,20 @@ const router = Router();
 // Public routes (no authentication required)
 router.get('/available-slots', AppointmentController.getAvailableSlots);
 
-// Protected routes (authentication required)
-router.use(authenticate);
+// User appointment routes (authentication required)
+router.post('/', authenticate, validate(appointmentValidation.create), AppointmentController.createAppointment);
+router.get('/', authenticate, AppointmentController.getUserAppointments);
+router.get('/:id', authenticate, AppointmentController.getAppointmentById);
+router.put('/:id/cancel', authenticate, AppointmentController.cancelAppointment);
 
-// User appointment routes
-router.post('/', validate(appointmentValidation.create), AppointmentController.createAppointment);
-router.get('/', AppointmentController.getUserAppointments);
-router.get('/:id', AppointmentController.getAppointmentById);
-router.put('/:id/cancel', AppointmentController.cancelAppointment);
+// Staff appointment management routes (Staff/Admin only)
+router.get('/all', authenticate, authorize(['staff', 'admin']), AppointmentController.getAllAppointments);
+router.put('/:id', authenticate, authorize(['staff', 'admin']), AppointmentController.updateAppointment);
+router.put('/:id/confirm', authenticate, authorize(['staff', 'admin']), AppointmentController.confirmAppointment);
+router.put('/:id/reject', authenticate, authorize(['staff', 'admin']), AppointmentController.rejectAppointment);
+router.put('/:id/complete', authenticate, authorize(['staff', 'admin']), AppointmentController.completeAppointment);
 
-// Staff/Admin only routes
-router.use(authorize('staff', 'admin'));
-
-// Staff appointment management routes
-router.get('/all', AppointmentController.getAllAppointments);
-router.put('/:id', AppointmentController.updateAppointment);
-router.put('/:id/confirm', AppointmentController.confirmAppointment);
-router.put('/:id/reject', AppointmentController.rejectAppointment);
-router.put('/:id/complete', AppointmentController.completeAppointment);
-
-// Admin only routes
-router.use(authorize('admin'));
-
-// Admin appointment statistics
-router.get('/statistics', AppointmentController.getAppointmentStatistics);
+// Admin appointment statistics (Admin only)
+router.get('/statistics', authenticate, authorize(['admin']), AppointmentController.getAppointmentStatistics);
 
 export default router;

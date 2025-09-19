@@ -10,6 +10,7 @@ import shopSettingsRoutes from './shopSettings';
 import notificationRoutes from './notification';
 import adminRoutes from './admin';
 import userRoutes from './users';
+import uploadRoutes from './upload';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/shop-settings', shopSettingsRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
+router.use('/upload', uploadRoutes);
 
 export default router;

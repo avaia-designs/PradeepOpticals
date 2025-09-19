@@ -142,7 +142,6 @@ export class ProductService {
     price: number;
     originalPrice?: number;
     category: string;
-    subcategory?: string;
     brand?: string;
     images: string[];
     inventory: number;
@@ -181,7 +180,6 @@ export class ProductService {
       price: number;
       originalPrice?: number;
       category: string;
-      subcategory?: string;
       brand?: string;
       images: string[];
       inventory: number;

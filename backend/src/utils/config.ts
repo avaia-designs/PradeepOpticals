@@ -18,7 +18,17 @@ export interface Config {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
 
-  // MinIO Configuration
+  // S3-Compatible Storage Configuration
+  // For MinIO (local development) or AWS S3 (production)
+  S3_ENDPOINT: string;
+  S3_PORT: number;
+  S3_ACCESS_KEY: string;
+  S3_SECRET_KEY: string;
+  S3_BUCKET_NAME: string;
+  S3_USE_SSL: boolean;
+  S3_REGION: string;
+  
+  // Legacy MinIO configuration (for backward compatibility)
   MINIO_ENDPOINT: string;
   MINIO_PORT: number;
   MINIO_ACCESS_KEY: string;
@@ -77,7 +87,17 @@ class ConfigManager {
       JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
       JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
 
-      // MinIO Configuration
+      // S3-Compatible Storage Configuration
+      // Use S3_* variables if available, otherwise fall back to MINIO_* for backward compatibility
+      S3_ENDPOINT: process.env.S3_ENDPOINT || process.env.MINIO_ENDPOINT || 'localhost',
+      S3_PORT: parseInt(process.env.S3_PORT || process.env.MINIO_PORT || '9000', 10),
+      S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || 'minioadmin',
+      S3_SECRET_KEY: process.env.S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || 'minioadmin123',
+      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || 'ecommerce-uploads',
+      S3_USE_SSL: process.env.S3_USE_SSL === 'true' || process.env.MINIO_USE_SSL === 'true',
+      S3_REGION: process.env.S3_REGION || 'us-east-1',
+      
+      // Legacy MinIO Configuration (for backward compatibility)
       MINIO_ENDPOINT: process.env.MINIO_ENDPOINT || 'localhost',
       MINIO_PORT: parseInt(process.env.MINIO_PORT || '9000', 10),
       MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY || 'minioadmin',
