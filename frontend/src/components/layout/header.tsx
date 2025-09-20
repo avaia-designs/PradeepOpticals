@@ -128,45 +128,8 @@ export function Header({ className }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="font-medium">
-                  Products
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuLabel>Eyewear Categories</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/products/prescription-glasses">Prescription Glasses</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/products/sunglasses">Sunglasses</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/products/reading-glasses">Reading Glasses</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/products/computer-glasses">Computer Glasses</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/products">View All Products</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Link href="/brands" className="text-sm font-medium hover:text-primary transition-colors">
-              Brands
-            </Link>
-            <Link href="/sale" className="text-sm font-medium hover:text-primary transition-colors">
-              Sale
-            </Link>
-            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">
-              About
-            </Link>
-            <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors">
-              Contact
+            <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">
+              Products
             </Link>
           </nav>
 
@@ -223,18 +186,6 @@ export function Header({ className }: HeaderProps) {
               <span className="sr-only">Search</span>
             </Button>
 
-            {/* Wishlist */}
-            <Button variant="ghost" size="icon" asChild className="relative">
-              <Link href="/wishlist">
-                <Heart className="h-5 w-5" />
-                <span className="sr-only">Wishlist</span>
-                {wishlistCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                    {wishlistCount}
-                  </Badge>
-                )}
-              </Link>
-            </Button>
 
             {/* Cart */}
             <Button variant="ghost" size="icon" asChild className="relative">
@@ -275,9 +226,6 @@ export function Header({ className }: HeaderProps) {
                   
                   {/* Customer Menu Items */}
                   <DropdownMenuItem asChild>
-                    <Link href="/account">Account Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link href="/orders">My Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -285,9 +233,6 @@ export function Header({ className }: HeaderProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/quotations">My Quotations</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/wishlist">Wishlist</Link>
                   </DropdownMenuItem>
                   
                   {/* Staff/Admin Menu Items */}
@@ -383,40 +328,6 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
         <Link href="/products" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
           All Products
         </Link>
-        <Link href="/products/prescription-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Prescription Glasses
-        </Link>
-        <Link href="/products/sunglasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Sunglasses
-        </Link>
-        <Link href="/products/reading-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Reading Glasses
-        </Link>
-        <Link href="/products/computer-glasses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Computer Glasses
-        </Link>
-        <Link href="/brands" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Brands
-        </Link>
-        <Link href="/sale" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Sale
-        </Link>
-      </nav>
-
-      <Separator />
-
-      {/* Company */}
-      <nav className="space-y-1">
-        <div className="text-sm font-medium text-muted-foreground mb-2">Company</div>
-        <Link href="/about" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          About Us
-        </Link>
-        <Link href="/contact" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Contact
-        </Link>
-        <Link href="/help" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-          Help Center
-        </Link>
       </nav>
 
       <Separator />
@@ -437,17 +348,14 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div className="space-y-1">
-            <Link href="/account" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-              Account Settings
-            </Link>
             <Link href="/orders" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
               My Orders
             </Link>
-            <Link href="/wishlist" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-              Wishlist
+            <Link href="/appointments" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+              My Appointments
             </Link>
-            <Link href="/addresses" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
-              Addresses
+            <Link href="/quotations" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+              My Quotations
             </Link>
             <Button variant="ghost" className="justify-start p-0 h-auto text-destructive hover:text-destructive" onClick={handleLogout}>
               Log out

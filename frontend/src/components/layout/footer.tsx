@@ -52,31 +52,6 @@ export function Footer() {
                   All Products
                 </Link>
               </li>
-              <li>
-                <Link href="/products/prescription-glasses" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Prescription Glasses
-                </Link>
-              </li>
-              <li>
-                <Link href="/products/sunglasses" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Sunglasses
-                </Link>
-              </li>
-              <li>
-                <Link href="/products/reading-glasses" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Reading Glasses
-                </Link>
-              </li>
-              <li>
-                <Link href="/brands" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Brands
-                </Link>
-              </li>
-              <li>
-                <Link href="/sale" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Sale
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -85,33 +60,13 @@ export function Footer() {
             <h3 className="text-lg font-semibold">Customer Service</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/help" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Help Center
+                <Link href="/appointments" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Book Appointment
                 </Link>
               </li>
               <li>
-                <Link href="/shipping" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link href="/returns" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Returns & Exchanges
-                </Link>
-              </li>
-              <li>
-                <Link href="/size-guide" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Size Guide
-                </Link>
-              </li>
-              <li>
-                <Link href="/warranty" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Warranty
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Contact Us
+                <Link href="/quotations" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Get Quotation
                 </Link>
               </li>
             </ul>
@@ -162,15 +117,9 @@ export function Footer() {
             © 2024 Pradeep Opticals. All rights reserved.
           </div>
           <div className="flex items-center space-x-6 text-sm">
-            <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-              Terms of Service
-            </Link>
-            <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">
-              Cookie Policy
-            </Link>
+            <span className="text-gray-400">Privacy Policy</span>
+            <span className="text-gray-400">Terms of Service</span>
+            <span className="text-gray-400">Cookie Policy</span>
           </div>
         </div>
       </div>
