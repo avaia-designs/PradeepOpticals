@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { StaffLayout } from '@/components/layout/staff-layout';
+import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,7 +50,11 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Eye,
+  Edit,
+  Trash2,
   Plus,
+  Download,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { Permission } from '@/lib/permissions';
@@ -58,15 +71,17 @@ const statusConfig = {
   no_show: { label: 'No Show', color: 'bg-gray-100 text-gray-800', icon: XCircle },
 };
 
-export default function StaffAppointmentsPage() {
+export default function AdminAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('today');
+  const [selectedDate, setSelectedDate] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const loadAppointments = async (page: number = 1) => {
     try {
@@ -115,6 +130,11 @@ export default function StaffAppointmentsPage() {
     }
   };
 
+  const handleViewDetails = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsOpen(true);
+  };
+
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   };
@@ -130,6 +150,16 @@ export default function StaffAppointmentsPage() {
     });
   };
 
+  const filteredAppointments = appointments.filter((appointment) => {
+    const matchesSearch = appointment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         appointment.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         appointment.appointmentNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatus === 'all' || appointment.status === selectedStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   const getStatusIcon = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig];
     return config ? config.icon : AlertCircle;
@@ -140,43 +170,84 @@ export default function StaffAppointmentsPage() {
     return config ? config.color : 'bg-gray-100 text-gray-800';
   };
 
-  const filteredAppointments = appointments.filter((appointment) => {
-    const matchesSearch = appointment.appointmentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || appointment.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
-
   if (loading && appointments.length === 0) {
     return (
-      <RoleGuard requiredRole="staff">
-        <StaffLayout>
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading appointments...</p>
-            </div>
+      <AdminLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading appointments...</p>
           </div>
-        </StaffLayout>
-      </RoleGuard>
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <RoleGuard requiredRole="staff">
-      <StaffLayout>
+    <RoleGuard requiredRole="admin">
+      <AdminLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Appointments</h1>
-              <p className="text-gray-600 mt-2">Manage customer appointments</p>
+              <h1 className="text-3xl font-bold">Appointments Management</h1>
+              <p className="text-gray-600 mt-2">Manage all appointments across the system</p>
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Appointment
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                New Appointment
+              </Button>
+            </div>
           </div>
+
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search appointments..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="no_show">No Show</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedDate} onValueChange={setSelectedDate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Dates</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="this_week">This Week</SelectItem>
+                    <SelectItem value="this_month">This Month</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => loadAppointments(currentPage)}>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Apply Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -234,51 +305,10 @@ export default function StaffAppointmentsPage() {
             </Card>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search appointments..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="no_show">No Show</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={selectedDate} onValueChange={setSelectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                    <SelectItem value="this_week">This Week</SelectItem>
-                    <SelectItem value="all">All Dates</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Appointments Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments ({filteredAppointments.length})</CardTitle>
+              <CardTitle>All Appointments ({filteredAppointments.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -289,7 +319,7 @@ export default function StaffAppointmentsPage() {
                     <TableHead>Date & Time</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead>Staff</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -343,9 +373,14 @@ export default function StaffAppointmentsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="max-w-xs truncate" title={appointment.notes}>
-                            {appointment.notes || '-'}
-                          </div>
+                          {appointment.staffId ? (
+                            <div className="flex items-center">
+                              <User className="h-4 w-4 mr-2 text-gray-400" />
+                              Staff Member
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">Unassigned</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -356,8 +391,8 @@ export default function StaffAppointmentsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <User className="h-4 w-4 mr-2" />
+                              <DropdownMenuItem onClick={() => handleViewDetails(appointment)}>
+                                <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -377,10 +412,9 @@ export default function StaffAppointmentsPage() {
                                   Mark Complete
                                 </DropdownMenuItem>
                               )}
-                              {(appointment.status === 'pending' ||
-                                appointment.status === 'confirmed') && (
+                              {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                                 <DropdownMenuItem
-                                  onClick={() => handleStatusUpdate(appointment._id, 'cancelled', 'Cancelled by staff')}
+                                  onClick={() => handleStatusUpdate(appointment._id, 'cancelled', 'Cancelled by admin')}
                                   className="text-red-600"
                                 >
                                   <XCircle className="h-4 w-4 mr-2" />
@@ -424,8 +458,98 @@ export default function StaffAppointmentsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Appointment Details Dialog */}
+          <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Appointment Details</DialogTitle>
+                <DialogDescription>
+                  View detailed information about this appointment
+                </DialogDescription>
+              </DialogHeader>
+              {selectedAppointment && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Appointment Number</label>
+                      <p className="text-lg font-semibold">{selectedAppointment.appointmentNumber}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <div className="mt-1">
+                        <Badge className={getStatusColor(selectedAppointment.status)}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusConfig[selectedAppointment.status as keyof typeof statusConfig]?.label || selectedAppointment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Customer Name</label>
+                      <p className="text-lg">{selectedAppointment.customerName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <p className="text-lg">{selectedAppointment.customerEmail}</p>
+                    </div>
+                  </div>
+
+                  {selectedAppointment.customerPhone && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Phone</label>
+                      <p className="text-lg">{selectedAppointment.customerPhone}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Date</label>
+                      <p className="text-lg">{formatDate(selectedAppointment.appointmentDate)}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Time</label>
+                      <p className="text-lg">
+                        {formatTime(selectedAppointment.startTime)} - {formatTime(selectedAppointment.endTime)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Reason</label>
+                    <p className="text-lg">{selectedAppointment.reason}</p>
+                  </div>
+
+                  {selectedAppointment.notes && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Notes</label>
+                      <p className="text-lg">{selectedAppointment.notes}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Created At</label>
+                      <p className="text-lg">{formatDate(selectedAppointment.createdAt)}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Last Modified</label>
+                      <p className="text-lg">{formatDate(selectedAppointment.modifiedAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
-      </StaffLayout>
+      </AdminLayout>
     </RoleGuard>
   );
 }

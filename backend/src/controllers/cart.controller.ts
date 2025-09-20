@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { CartService, Cart } from '../services/cart.service';
+import { CartService, CartResponse } from '../services/cart.service';
 import { AuthenticatedRequest } from '../types';
 import { Logger } from '../utils/logger';
 
@@ -14,29 +14,26 @@ export class CartController {
    */
   static async getCart(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // In a real implementation, you would store cart in database or session
-      // For now, we'll use a simple in-memory approach
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      const userId = req.user.id;
+      const cart = await CartService.getCart(userId);
 
       // Validate cart against current product data
       const validation = await CartService.validateCart(cart);
       if (!validation.valid) {
-        // Remove invalid items
-        cart.items = cart.items.filter(item => 
-          !validation.errors.some(error => error.includes(item.productName))
-        );
-        CartService.calculateTotals(cart);
+        Logger.warn('Cart validation failed', { userId, errors: validation.errors });
+        // Note: In a production app, you might want to clean up invalid items
+        // For now, we'll just log the warnings
       }
 
-      Logger.info('Cart retrieved successfully', { itemCount: cart.itemCount });
+      Logger.info('Cart retrieved successfully', { userId, itemCount: cart.itemCount });
 
       res.status(200).json({
         success: true,
@@ -55,6 +52,15 @@ export class CartController {
    */
   static async addItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      const userId = req.user.id;
       const { productId, quantity, specifications } = req.body;
 
       if (!productId || !quantity || quantity <= 0) {
@@ -66,26 +72,10 @@ export class CartController {
         return;
       }
 
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
+      // Add item to cart in database
+      const cart = await CartService.addItem(userId, productId, quantity, specifications);
 
-      // Add item to cart
-      cart = CartService.addItem(cart, productId, quantity, specifications);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
-      }
-
-      Logger.info('Item added to cart successfully', { productId, quantity });
+      Logger.info('Item added to cart successfully', { userId, productId, quantity });
 
       res.status(200).json({
         success: true,
@@ -104,6 +94,15 @@ export class CartController {
    */
   static async updateItemQuantity(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      const userId = req.user.id;
       const { productId } = req.params;
       const { quantity } = req.body;
 
@@ -116,26 +115,10 @@ export class CartController {
         return;
       }
 
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
+      // Update item quantity in database
+      const cart = await CartService.updateItemQuantity(userId, productId, quantity);
 
-      // Update item quantity
-      cart = CartService.updateItemQuantity(cart, productId, quantity);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
-      }
-
-      Logger.info('Item quantity updated successfully', { productId, quantity });
+      Logger.info('Item quantity updated successfully', { userId, productId, quantity });
 
       res.status(200).json({
         success: true,
@@ -154,28 +137,21 @@ export class CartController {
    */
   static async removeItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      const userId = req.user.id;
       const { productId } = req.params;
 
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
+      // Remove item from cart in database
+      const cart = await CartService.removeItem(userId, productId);
 
-      // Remove item from cart
-      cart = CartService.removeItem(cart, productId);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
-      }
-
-      Logger.info('Item removed from cart successfully', { productId });
+      Logger.info('Item removed from cart successfully', { userId, productId });
 
       res.status(200).json({
         success: true,
@@ -194,26 +170,20 @@ export class CartController {
    */
   static async clearCart(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
-
-      // Clear cart
-      cart = CartService.clearCart(cart);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
       }
+      const userId = req.user.id;
 
-      Logger.info('Cart cleared successfully');
+      // Clear cart in database
+      const cart = await CartService.clearCart(userId);
+
+      Logger.info('Cart cleared successfully', { userId });
 
       res.status(200).json({
         success: true,
@@ -232,6 +202,15 @@ export class CartController {
    */
   static async applyDiscount(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      const userId = req.user.id;
       const { discountAmount } = req.body;
 
       if (!discountAmount || discountAmount <= 0) {
@@ -243,26 +222,10 @@ export class CartController {
         return;
       }
 
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
+      // Apply discount in database
+      const cart = await CartService.applyDiscount(userId, discountAmount);
 
-      // Apply discount
-      cart = CartService.applyDiscount(cart, discountAmount);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
-      }
-
-      Logger.info('Discount applied successfully', { discountAmount });
+      Logger.info('Discount applied successfully', { userId, discountAmount });
 
       res.status(200).json({
         success: true,
@@ -281,26 +244,20 @@ export class CartController {
    */
   static async removeDiscount(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Get current cart
-      let cart: Cart = req.session?.cart || {
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        totalAmount: 0,
-        itemCount: 0
-      };
-
-      // Remove discount
-      cart = CartService.removeDiscount(cart);
-
-      // Store cart in session
-      if (req.session) {
-        req.session.cart = cart;
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'User not authenticated'
+        });
+        return;
       }
+      const userId = req.user.id;
 
-      Logger.info('Discount removed successfully');
+      // Remove discount in database
+      const cart = await CartService.removeDiscount(userId);
+
+      Logger.info('Discount removed successfully', { userId });
 
       res.status(200).json({
         success: true,

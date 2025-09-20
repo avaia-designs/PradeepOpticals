@@ -1,4 +1,5 @@
 import { Product } from '../models';
+import { Cart, ICart, ICartItem } from '../models/cart.model';
 import { Logger } from '../utils/logger';
 
 export interface CartItem {
@@ -15,7 +16,7 @@ export interface CartItem {
   };
 }
 
-export interface Cart {
+export interface CartResponse {
   items: CartItem[];
   subtotal: number;
   tax: number;
@@ -27,10 +28,39 @@ export interface Cart {
 
 export class CartService {
   /**
-   * Add item to cart
+   * Get user's cart from database
    */
-  static addItem(
-    cart: Cart,
+  static async getCart(userId: string): Promise<CartResponse> {
+    try {
+      let cart = await Cart.findOne({ userId });
+      
+      if (!cart) {
+        // Create empty cart if none exists
+        cart = new Cart({
+          userId,
+          items: [],
+          subtotal: 0,
+          tax: 0,
+          shipping: 0,
+          discount: 0,
+          totalAmount: 0,
+          itemCount: 0
+        });
+        await cart.save();
+      }
+
+      return this.convertToResponse(cart);
+    } catch (error) {
+      Logger.error('Failed to get cart', error as Error, { userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Add item to cart in database
+   */
+  static async addItem(
+    userId: string,
     productId: string,
     quantity: number,
     specifications?: {
@@ -38,29 +68,58 @@ export class CartService {
       color?: string;
       size?: string;
     }
-  ): Cart {
+  ): Promise<CartResponse> {
     try {
-      Logger.info('Adding item to cart', { productId, quantity });
+      Logger.info('Adding item to cart', { userId, productId, quantity });
 
-      // Find existing item
+      // Get product details
+      const product = await Product.findById(productId);
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      if (!product.isActive) {
+        throw new Error('Product is not available');
+      }
+
+      if (product.inventory < quantity) {
+        throw new Error(`Only ${product.inventory} units available`);
+      }
+
+      // Get or create cart
+      let cart = await Cart.findOne({ userId });
+      if (!cart) {
+        cart = new Cart({
+          userId,
+          items: [],
+          subtotal: 0,
+          tax: 0,
+          shipping: 0,
+          discount: 0,
+          totalAmount: 0,
+          itemCount: 0
+        });
+      }
+
+      // Check if item already exists
       const existingItemIndex = cart.items.findIndex(item => item.productId === productId);
-
+      
       if (existingItemIndex > -1) {
-        // Update existing item quantity
+        // Update existing item
         cart.items[existingItemIndex].quantity += quantity;
         cart.items[existingItemIndex].totalPrice = 
           cart.items[existingItemIndex].quantity * cart.items[existingItemIndex].unitPrice;
       } else {
-        // Add new item - we need to get product details
-        // In a real implementation, you'd fetch from database
-        // For now, we'll create a placeholder
-        const newItem: CartItem = {
+        // Add new item
+        const newItem: ICartItem = {
           productId,
-          productName: 'Product Name', // This should be fetched from database
-          productImage: '/placeholder-image.jpg',
+          productName: product.name,
+          productImage: (Array.isArray(product.images) && product.images.length > 0 
+            ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0]?.url)
+            : undefined) || '/placeholder-image.jpg',
           quantity,
-          unitPrice: 0, // This should be fetched from database
-          totalPrice: 0,
+          unitPrice: product.price,
+          totalPrice: product.price * quantity,
           specifications
         };
         cart.items.push(newItem);
@@ -68,32 +127,42 @@ export class CartService {
 
       // Recalculate totals
       this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Item added to cart successfully', { productId, quantity });
-      return cart;
+      Logger.info('Item added to cart successfully', { userId, productId, quantity });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to add item to cart', error as Error, { productId, quantity });
+      Logger.error('Failed to add item to cart', error as Error, { userId, productId, quantity });
       throw error;
     }
   }
 
   /**
-   * Update item quantity in cart
+   * Update item quantity in cart in database
    */
-  static updateItemQuantity(cart: Cart, productId: string, quantity: number): Cart {
+  static async updateItemQuantity(
+    userId: string,
+    productId: string,
+    quantity: number
+  ): Promise<CartResponse> {
     try {
-      Logger.info('Updating item quantity in cart', { productId, quantity });
+      Logger.info('Updating item quantity in cart', { userId, productId, quantity });
+
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        throw new Error('Cart not found');
+      }
 
       const itemIndex = cart.items.findIndex(item => item.productId === productId);
-      
       if (itemIndex === -1) {
         throw new Error('Item not found in cart');
       }
 
       if (quantity <= 0) {
-        // Remove item if quantity is 0 or negative
+        // Remove item
         cart.items.splice(itemIndex, 1);
       } else {
+        // Update quantity
         cart.items[itemIndex].quantity = quantity;
         cart.items[itemIndex].totalPrice = 
           cart.items[itemIndex].quantity * cart.items[itemIndex].unitPrice;
@@ -101,64 +170,84 @@ export class CartService {
 
       // Recalculate totals
       this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Item quantity updated successfully', { productId, quantity });
-      return cart;
+      Logger.info('Item quantity updated successfully', { userId, productId, quantity });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to update item quantity', error as Error, { productId, quantity });
+      Logger.error('Failed to update item quantity', error as Error, { userId, productId, quantity });
       throw error;
     }
   }
 
   /**
-   * Remove item from cart
+   * Remove item from cart in database
    */
-  static removeItem(cart: Cart, productId: string): Cart {
+  static async removeItem(userId: string, productId: string): Promise<CartResponse> {
     try {
-      Logger.info('Removing item from cart', { productId });
+      Logger.info('Removing item from cart', { userId, productId });
+
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        throw new Error('Cart not found');
+      }
 
       cart.items = cart.items.filter(item => item.productId !== productId);
-
-      // Recalculate totals
       this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Item removed from cart successfully', { productId });
-      return cart;
+      Logger.info('Item removed from cart successfully', { userId, productId });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to remove item from cart', error as Error, { productId });
+      Logger.error('Failed to remove item from cart', error as Error, { userId, productId });
       throw error;
     }
   }
 
   /**
-   * Clear cart
+   * Clear cart in database
    */
-  static clearCart(cart: Cart): Cart {
+  static async clearCart(userId: string): Promise<CartResponse> {
     try {
-      Logger.info('Clearing cart');
+      Logger.info('Clearing cart', { userId });
+
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        // Return empty cart if none exists
+        return {
+          items: [],
+          subtotal: 0,
+          tax: 0,
+          shipping: 0,
+          discount: 0,
+          totalAmount: 0,
+          itemCount: 0
+        };
+      }
 
       cart.items = [];
-      cart.subtotal = 0;
-      cart.tax = 0;
-      cart.shipping = 0;
-      cart.discount = 0;
-      cart.totalAmount = 0;
-      cart.itemCount = 0;
+      this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Cart cleared successfully');
-      return cart;
+      Logger.info('Cart cleared successfully', { userId });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to clear cart', error as Error);
+      Logger.error('Failed to clear cart', error as Error, { userId });
       throw error;
     }
   }
 
   /**
-   * Apply discount to cart
+   * Apply discount to cart in database
    */
-  static applyDiscount(cart: Cart, discountAmount: number): Cart {
+  static async applyDiscount(userId: string, discountAmount: number): Promise<CartResponse> {
     try {
-      Logger.info('Applying discount to cart', { discountAmount });
+      Logger.info('Applying discount to cart', { userId, discountAmount });
+
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        throw new Error('Cart not found');
+      }
 
       if (discountAmount < 0) {
         throw new Error('Discount amount cannot be negative');
@@ -170,37 +259,68 @@ export class CartService {
 
       cart.discount = discountAmount;
       this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Discount applied successfully', { discountAmount });
-      return cart;
+      Logger.info('Discount applied successfully', { userId, discountAmount });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to apply discount', error as Error, { discountAmount });
+      Logger.error('Failed to apply discount', error as Error, { userId, discountAmount });
       throw error;
     }
   }
 
   /**
-   * Remove discount from cart
+   * Remove discount from cart in database
    */
-  static removeDiscount(cart: Cart): Cart {
+  static async removeDiscount(userId: string): Promise<CartResponse> {
     try {
-      Logger.info('Removing discount from cart');
+      Logger.info('Removing discount from cart', { userId });
+
+      const cart = await Cart.findOne({ userId });
+      if (!cart) {
+        throw new Error('Cart not found');
+      }
 
       cart.discount = 0;
       this.calculateTotals(cart);
+      await cart.save();
 
-      Logger.info('Discount removed successfully');
-      return cart;
+      Logger.info('Discount removed successfully', { userId });
+      return this.convertToResponse(cart);
     } catch (error) {
-      Logger.error('Failed to remove discount', error as Error);
+      Logger.error('Failed to remove discount', error as Error, { userId });
       throw error;
     }
   }
+
+  /**
+   * Convert database cart to response format
+   */
+  private static convertToResponse(cart: ICart): CartResponse {
+    return {
+      items: cart.items.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        productImage: item.productImage || '/placeholder-image.jpg',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        specifications: item.specifications
+      })),
+      subtotal: cart.subtotal,
+      tax: cart.tax,
+      shipping: cart.shipping,
+      discount: cart.discount,
+      totalAmount: cart.totalAmount,
+      itemCount: cart.itemCount
+    };
+  }
+
 
   /**
    * Calculate cart totals
    */
-  static calculateTotals(cart: Cart): void {
+  static calculateTotals(cart: ICart): void {
     // Calculate subtotal
     cart.subtotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
 
@@ -220,7 +340,7 @@ export class CartService {
   /**
    * Validate cart against current product data
    */
-  static async validateCart(cart: Cart): Promise<{ valid: boolean; errors: string[] }> {
+  static async validateCart(cart: CartResponse): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
 
     try {

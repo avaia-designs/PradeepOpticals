@@ -196,6 +196,26 @@ export class ErrorHandler {
   }
 
   /**
+   * Handle notification operation errors
+   */
+  static handleNotificationError(error: any, operation: string): void {
+    console.error(`Notification ${operation} error:`, error);
+    
+    if (error.response?.status === 400) {
+      const message = error.response.data?.message || `Invalid ${operation} request`;
+      toast.error(message);
+      return;
+    }
+
+    if (error.response?.status === 404) {
+      toast.error('Notification not found.');
+      return;
+    }
+
+    this.handleApiError(error, `Failed to ${operation} notification`);
+  }
+
+  /**
    * Get user-friendly error message
    */
   static getErrorMessage(error: any): string {

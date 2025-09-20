@@ -29,3 +29,6 @@ export type { IShopSettings, IShopSettingsDocument } from './ShopSettings';
 
 export { Notification, NotificationType, NotificationPriority } from './Notification';
 export type { INotification, INotificationDocument } from './Notification';
+
+export { Cart } from './cart.model';
+export type { ICart, ICartItem } from './cart.model';

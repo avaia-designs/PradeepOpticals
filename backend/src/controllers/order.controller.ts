@@ -18,8 +18,8 @@ export class OrderController {
       const userId = req.user.id;
       const { shippingAddress, paymentMethod, notes, prescriptionFile } = req.body;
 
-      // Get cart from session
-      const cart = req.session?.cart;
+      // Get cart from database
+      const cart = await CartService.getCart(userId);
       if (!cart || cart.items.length === 0) {
         res.status(400).json({
           success: false,
@@ -40,9 +40,7 @@ export class OrderController {
       );
 
       // Clear cart after successful order
-      if (req.session) {
-        req.session.cart = CartService.clearCart(cart);
-      }
+      await CartService.clearCart(userId);
 
       Logger.info('Order created successfully', { orderId: order._id, userId });
 
