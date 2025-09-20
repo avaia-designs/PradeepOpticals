@@ -11,6 +11,7 @@ import { Order, OrderStatus } from '../models';
 import { Appointment, AppointmentStatus } from '../models';
 import { Product } from '../models';
 import { Logger } from '../utils/logger';
+import bcrypt from 'bcryptjs';
 
 interface SampleOrder {
   userId: string;
@@ -116,7 +117,13 @@ async function createSampleCustomers(): Promise<string[]> {
         continue;
       }
 
-      const customer = new User(customerData);
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(customerData.password, 12);
+
+      const customer = new User({
+        ...customerData,
+        password: hashedPassword
+      });
       await customer.save();
       customerIds.push(customer._id.toString());
       
@@ -167,7 +174,13 @@ async function createSampleStaff(): Promise<string[]> {
         continue;
       }
 
-      const staff = new User(staffData);
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(staffData.password, 12);
+
+      const staff = new User({
+        ...staffData,
+        password: hashedPassword
+      });
       await staff.save();
       staffIds.push(staff._id.toString());
       

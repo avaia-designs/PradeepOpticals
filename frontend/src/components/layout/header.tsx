@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 interface HeaderProps {
   className?: string;
@@ -200,6 +201,9 @@ export function Header({ className }: HeaderProps) {
               </Link>
             </Button>
 
+            {/* Notifications */}
+            <NotificationBell />
+
             {/* User Menu */}
             {isAuthenticated ? (
               <DropdownMenu>
@@ -233,6 +237,9 @@ export function Header({ className }: HeaderProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/quotations">My Quotations</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/notifications">Notifications</Link>
                   </DropdownMenuItem>
                   
                   {/* Staff/Admin Menu Items */}
@@ -348,6 +355,11 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div className="space-y-1">
+            {/* Mobile Notifications */}
+            <div className="py-2">
+              <NotificationBell />
+            </div>
+            
             <Link href="/orders" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
               My Orders
             </Link>
@@ -356,6 +368,9 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
             </Link>
             <Link href="/quotations" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
               My Quotations
+            </Link>
+            <Link href="/notifications" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+              Notifications
             </Link>
             <Button variant="ghost" className="justify-start p-0 h-auto text-destructive hover:text-destructive" onClick={handleLogout}>
               Log out

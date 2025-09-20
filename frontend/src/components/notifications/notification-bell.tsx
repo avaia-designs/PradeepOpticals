@@ -15,17 +15,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
-
-interface Notification {
-  _id: string;
-  type: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  actionUrl?: string;
-  metadata?: Record<string, any>;
-}
+import { useUserStore } from '@/stores/user-store';
+import { NotificationService, Notification } from '@/lib/services/notification.service';
+import { toast } from 'sonner';
 
 const notificationIcons = {
   appointment_confirmed: Calendar,
@@ -54,63 +46,74 @@ const notificationColors = {
 };
 
 export function NotificationBell() {
+  const { isAuthenticated, user } = useUserStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Mock data - replace with actual API calls
+  // Load notifications when user is authenticated
   useEffect(() => {
-    const mockNotifications: Notification[] = [
-      {
-        _id: '1',
-        type: 'appointment_confirmed',
-        title: 'Appointment Confirmed',
-        message: 'Your appointment APT-20241201-1234 for Dec 1, 2024 at 10:00 AM has been confirmed.',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-        actionUrl: '/appointments',
-      },
-      {
-        _id: '2',
-        type: 'order_confirmed',
-        title: 'Order Confirmed',
-        message: 'Your order #ORD-20241201-5678 has been confirmed and is being processed.',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-        actionUrl: '/orders',
-      },
-      {
-        _id: '3',
-        type: 'quotation_approved',
-        title: 'Quotation Approved',
-        message: 'Your quotation #QUO-20241201-9012 has been approved by our team.',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-        actionUrl: '/quotations',
-      },
-    ];
+    if (isAuthenticated && user) {
+      loadNotifications();
+      loadUnreadCount();
+    } else {
+      // Clear notifications when user logs out
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, user]);
 
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
-  }, []);
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const result = await NotificationService.getUserNotifications(1, 10);
+      setNotifications(result.data);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      // Don't show error toast for notifications as it's not critical
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const count = await NotificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   const markAsRead = async (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification._id === notificationId
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    try {
+      await NotificationService.markAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification._id === notificationId
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
-    setUnreadCount(0);
+    try {
+      await NotificationService.markAllAsRead();
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, isRead: true }))
+      );
+      setUnreadCount(0);
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark all notifications as read');
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -135,6 +138,11 @@ export function NotificationBell() {
       window.location.href = notification.actionUrl;
     }
   };
+
+  // Don't render if user is not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
