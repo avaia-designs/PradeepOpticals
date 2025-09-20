@@ -48,17 +48,21 @@ export class NotificationService {
       if (filters?.priority) params.append('priority', filters.priority);
 
       const response = await apiClient.get<Notification[]>(
-        `/notifications?${params.toString()}`
+        `/notifications?${params.toString()}`,
+        { timeout: 5000 } // 5 second timeout
       );
       
       return {
-        data: response.data,
+        data: response.data || [],
         pagination: response.meta?.pagination || { page: 1, limit: 20, total: 0, pages: 0 }
       };
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      ErrorHandler.handleNotificationError(error, 'fetch');
-      throw error;
+      // Return empty result instead of throwing to prevent login interference
+      return {
+        data: [],
+        pagination: { page: 1, limit: 20, total: 0, pages: 0 }
+      };
     }
   }
 
@@ -67,12 +71,15 @@ export class NotificationService {
    */
   static async getUnreadCount(): Promise<number> {
     try {
-      const response = await apiClient.get<{ count: number }>('/notifications/unread-count');
-      return response.data.count;
+      const response = await apiClient.get<{ count: number }>(
+        '/notifications/unread-count',
+        { timeout: 5000 } // 5 second timeout
+      );
+      return response.data.count || 0;
     } catch (error) {
       console.error('Error fetching unread count:', error);
-      ErrorHandler.handleNotificationError(error, 'fetch count');
-      throw error;
+      // Return 0 instead of throwing to prevent login interference
+      return 0;
     }
   }
 

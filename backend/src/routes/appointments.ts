@@ -16,11 +16,13 @@ router.get('/available-slots', AppointmentController.getAvailableSlots);
 // User appointment routes (authentication required)
 router.post('/', authenticate, validate(appointmentValidation.create), AppointmentController.createAppointment);
 router.get('/', authenticate, AppointmentController.getUserAppointments);
+
+// Staff appointment management routes (Staff/Admin only) - Must be before /:id route
+router.get('/all', authenticate, authorize(['staff', 'admin']), AppointmentController.getAllAppointments);
+
+// Individual appointment routes (must be after specific routes)
 router.get('/:id', authenticate, AppointmentController.getAppointmentById);
 router.put('/:id/cancel', authenticate, AppointmentController.cancelAppointment);
-
-// Staff appointment management routes (Staff/Admin only)
-router.get('/all', authenticate, authorize(['staff', 'admin']), AppointmentController.getAllAppointments);
 router.put('/:id', authenticate, authorize(['staff', 'admin']), AppointmentController.updateAppointment);
 router.put('/:id/confirm', authenticate, authorize(['staff', 'admin']), AppointmentController.confirmAppointment);
 router.put('/:id/reject', authenticate, authorize(['staff', 'admin']), AppointmentController.rejectAppointment);

@@ -51,27 +51,51 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load notifications when user is authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      loadNotifications();
-      loadUnreadCount();
-    } else {
+    if (isAuthenticated && user && !isInitialized) {
+      // Only load notifications when the user clicks on the bell or after a long delay
+      // This prevents interference with the login process
+      const timer = setTimeout(() => {
+        const token = localStorage.getItem('auth_token');
+        if (token && isAuthenticated) {
+          loadNotifications();
+          loadUnreadCount();
+          setIsInitialized(true);
+        }
+      }, 5000); // 5 second delay to ensure login is completely finished
+      
+      return () => clearTimeout(timer);
+    } else if (!isAuthenticated) {
       // Clear notifications when user logs out
       setNotifications([]);
       setUnreadCount(0);
+      setIsInitialized(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isInitialized]);
 
   const loadNotifications = async () => {
+    if (loading) return; // Prevent multiple simultaneous calls
+    
     try {
       setLoading(true);
       const result = await NotificationService.getUserNotifications(1, 10);
       setNotifications(result.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading notifications:', error);
+      
+      // Handle 401 errors specifically - user might not be fully authenticated
+      if (error.response?.status === 401) {
+        console.log('User not authenticated for notifications, skipping...');
+        setNotifications([]);
+        return;
+      }
+      
       // Don't show error toast for notifications as it's not critical
+      // Set empty array to prevent UI issues
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -81,8 +105,18 @@ export function NotificationBell() {
     try {
       const count = await NotificationService.getUnreadCount();
       setUnreadCount(count);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading unread count:', error);
+      
+      // Handle 401 errors specifically - user might not be fully authenticated
+      if (error.response?.status === 401) {
+        console.log('User not authenticated for unread count, skipping...');
+        setUnreadCount(0);
+        return;
+      }
+      
+      // Set to 0 to prevent UI issues
+      setUnreadCount(0);
     }
   };
 
@@ -139,15 +173,48 @@ export function NotificationBell() {
     }
   };
 
+  const handleBellClick = () => {
+    // Load notifications when user clicks the bell if not already loaded
+    if (!isInitialized && isAuthenticated && user) {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        loadNotifications();
+        loadUnreadCount();
+        setIsInitialized(true);
+      }
+    }
+    setIsOpen(!isOpen);
+  };
+
   // Don't render if user is not authenticated
   if (!isAuthenticated || !user) {
     return null;
   }
 
+  // Show a simple notification bell even if loading fails
+  if (!isInitialized) {
+    return (
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="relative" onClick={handleBellClick}>
+            <Bell className="h-5 w-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Click to load notifications...
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+        <Button variant="ghost" size="sm" className="relative" onClick={handleBellClick}>
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge

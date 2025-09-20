@@ -5,7 +5,7 @@ import { ApiResponse } from '../types';
 // Extend Request interface to include user
 interface AuthenticatedRequest extends Request {
   user?: {
-    _id: string;
+    id: string;
     role: string;
   };
 }
@@ -15,7 +15,7 @@ interface AuthenticatedRequest extends Request {
  */
 export const getUserNotifications = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { page = 1, limit = 20, isRead, type, priority } = req.query;
 
     if (!userId) {
@@ -62,7 +62,7 @@ export const getUserNotifications = async (req: AuthenticatedRequest, res: Respo
  */
 export const markNotificationsAsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { notificationIds } = req.body;
 
     if (!userId) {
@@ -100,7 +100,7 @@ export const markNotificationsAsRead = async (req: AuthenticatedRequest, res: Re
  */
 export const markAllNotificationsAsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -129,7 +129,7 @@ export const markAllNotificationsAsRead = async (req: AuthenticatedRequest, res:
  */
 export const getUnreadCount = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -158,7 +158,7 @@ export const getUnreadCount = async (req: AuthenticatedRequest, res: Response, n
  */
 export const deleteNotification = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { id } = req.params;
 
     if (!userId) {

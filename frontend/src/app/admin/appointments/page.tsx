@@ -479,7 +479,7 @@ export default function AdminAppointmentsPage() {
                       <label className="text-sm font-medium text-gray-600">Status</label>
                       <div className="mt-1">
                         <Badge className={getStatusColor(selectedAppointment.status)}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {React.createElement(getStatusIcon(selectedAppointment.status), { className: "h-3 w-3 mr-1" })}
                           {statusConfig[selectedAppointment.status as keyof typeof statusConfig]?.label || selectedAppointment.status}
                         </Badge>
                       </div>
