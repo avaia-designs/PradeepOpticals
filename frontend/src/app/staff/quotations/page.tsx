@@ -30,8 +30,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Search,
   Filter,
@@ -47,110 +53,66 @@ import {
   Mail,
   Phone,
   Calendar,
+  MessageSquare,
+  Download,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { Permission } from '@/lib/permissions';
+import { useAllQuotations, useApproveQuotation, useRejectQuotation, useStaffReply, useConvertQuotationToOrder } from '@/hooks/useQuotations';
+import { Quotation, QuotationStatus } from '@/types/quotation';
+import { QuotationDetailModal } from '@/components/quotations/QuotationDetailModal';
+import { toast } from 'sonner';
 
 export default function StaffQuotationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
-  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [staffNotes, setStaffNotes] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Mock data - replace with actual API calls
-  const quotations = [
-    {
-      _id: '1',
-      quotationNumber: 'QUO-20241201-1234',
-      customerName: 'John Doe',
-      customerEmail: 'john@example.com',
-      customerPhone: '+1 234 567 8900',
-      items: [
-        { productName: 'Ray-Ban Aviator', quantity: 1, unitPrice: 150, totalPrice: 150 },
-        { productName: 'Custom Lenses', quantity: 1, unitPrice: 100, totalPrice: 100 },
-      ],
-      totalAmount: 250,
-      status: 'pending',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer needs prescription lenses for reading',
-      prescriptionFile: 'prescription_1234.pdf',
-      createdAt: '2024-12-01T10:30:00Z',
-    },
-    {
-      _id: '2',
-      quotationNumber: 'QUO-20241201-1235',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane@example.com',
-      customerPhone: '+1 234 567 8901',
-      items: [
-        { productName: 'Oakley Sunglasses', quantity: 2, unitPrice: 120, totalPrice: 240 },
-      ],
-      totalAmount: 240,
-      status: 'approved',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer approved the quotation',
-      prescriptionFile: null,
-      createdAt: '2024-11-30T15:45:00Z',
-    },
-    {
-      _id: '3',
-      quotationNumber: 'QUO-20241201-1236',
-      customerName: 'Bob Johnson',
-      customerEmail: 'bob@example.com',
-      customerPhone: '+1 234 567 8902',
-      items: [
-        { productName: 'Gucci Frames', quantity: 1, unitPrice: 300, totalPrice: 300 },
-        { productName: 'Progressive Lenses', quantity: 1, unitPrice: 150, totalPrice: 150 },
-      ],
-      totalAmount: 450,
-      status: 'rejected',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer found the price too high',
-      prescriptionFile: 'prescription_1236.pdf',
-      createdAt: '2024-11-29T09:20:00Z',
-    },
-  ];
-
-  const filteredQuotations = quotations.filter((quotation) => {
-    const matchesSearch = quotation.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quotation.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || quotation.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+  // API hooks
+  const { quotations, loading, error, refetch } = useAllQuotations({
+    page: 1,
+    limit: 50,
+    status: selectedStatus === 'all' ? undefined : selectedStatus as QuotationStatus,
+    search: searchTerm || undefined
   });
 
-  const getStatusColor = (status: string) => {
+  const { approveQuotation, loading: approveLoading } = useApproveQuotation();
+  const { rejectQuotation, loading: rejectLoading } = useRejectQuotation();
+  const { addStaffReply, loading: replyLoading } = useStaffReply();
+  const { convertQuotationToOrder, loading: convertLoading } = useConvertQuotationToOrder();
+
+  const getStatusColor = (status: QuotationStatus) => {
     switch (status) {
-      case 'pending':
+      case QuotationStatus.PENDING:
         return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'converted':
+      case QuotationStatus.APPROVED:
         return 'bg-blue-100 text-blue-800';
-      case 'expired':
+      case QuotationStatus.REJECTED:
+        return 'bg-red-100 text-red-800';
+      case QuotationStatus.CONVERTED:
+        return 'bg-green-100 text-green-800';
+      case QuotationStatus.EXPIRED:
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: QuotationStatus) => {
     switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4" />;
-      case 'approved':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'rejected':
-        return <XCircle className="h-4 w-4" />;
-      case 'converted':
-        return <CheckCircle className="h-4 w-4" />;
+      case QuotationStatus.PENDING:
+        return Clock;
+      case QuotationStatus.APPROVED:
+        return CheckCircle;
+      case QuotationStatus.REJECTED:
+        return XCircle;
+      case QuotationStatus.CONVERTED:
+        return DollarSign;
+      case QuotationStatus.EXPIRED:
+        return Clock;
       default:
-        return <Clock className="h-4 w-4" />;
+        return Clock;
     }
   };
 
@@ -159,40 +121,114 @@ export default function StaffQuotationsPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const handleApprove = (quotation: any) => {
+  const handleApprove = async (quotation: Quotation, staffNotes?: string) => {
+    try {
+      const success = await approveQuotation(quotation._id, {
+        staffNotes: staffNotes || undefined
+      });
+      if (success) {
+        toast.success('Quotation approved successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to approve quotation');
+    }
+  };
+
+  const handleReject = async (quotation: Quotation, reason: string, staffNotes?: string) => {
+    try {
+      const success = await rejectQuotation(quotation._id, {
+        reason,
+        staffNotes: staffNotes || undefined
+      });
+      if (success) {
+        toast.success('Quotation rejected successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to reject quotation');
+    }
+  };
+
+  const handleReply = async (quotation: Quotation, message: string) => {
+    try {
+      const success = await addStaffReply(quotation._id, {
+        message
+      });
+      if (success) {
+        toast.success('Reply sent successfully!');
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to send reply');
+    }
+  };
+
+  const handleConvert = async (quotation: Quotation) => {
+    try {
+      const success = await convertQuotationToOrder(quotation._id);
+      if (success) {
+        toast.success('Quotation converted to order successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to convert quotation to order');
+    }
+  };
+
+  const handleViewDetails = (quotation: Quotation) => {
     setSelectedQuotation(quotation);
-    setIsApproveDialogOpen(true);
+    setIsDetailModalOpen(true);
   };
 
-  const handleReject = (quotation: any) => {
-    setSelectedQuotation(quotation);
-    setIsRejectDialogOpen(true);
-  };
+  const filteredQuotations = quotations.filter(quotation => {
+    const matchesSearch = quotation.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quotation.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
 
-  const confirmApprove = () => {
-    // Implement approve logic
-    console.log(`Approving quotation ${selectedQuotation?.quotationNumber} with notes: ${staffNotes}`);
-    setIsApproveDialogOpen(false);
-    setStaffNotes('');
-  };
-
-  const confirmReject = () => {
-    // Implement reject logic
-    console.log(`Rejecting quotation ${selectedQuotation?.quotationNumber} with reason: ${rejectionReason}`);
-    setIsRejectDialogOpen(false);
-    setRejectionReason('');
-  };
+  if (error) {
+    return (
+      <StaffLayout>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600">Error loading quotations: {error}</p>
+            <Button onClick={refetch} className="mt-4">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </StaffLayout>
+    );
+  }
 
   return (
     <StaffLayout>
+      <RoleGuard permission={Permission.MANAGE_QUOTATIONS}>
       <div className="space-y-6">
         {/* Header */}
+          <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quotations</h1>
-          <p className="text-gray-600">Manage customer quotation requests and approvals.</p>
+              <h1 className="text-3xl font-bold text-gray-900">Quotations Management</h1>
+              <p className="text-gray-600">Manage and review customer quotations</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Badge variant="outline" className="text-sm">
+                Total: {quotations.length}
+              </Badge>
+              <Badge variant="outline" className="text-sm">
+                Pending: {quotations.filter(q => q.status === QuotationStatus.PENDING).length}
+              </Badge>
+            </div>
         </div>
 
         {/* Filters */}
@@ -201,7 +237,7 @@ export default function StaffQuotationsPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search quotations..."
                     value={searchTerm}
@@ -210,24 +246,20 @@ export default function StaffQuotationsPage() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 border rounded-md"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="converted">Converted</option>
-                  <option value="expired">Expired</option>
-                </select>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-              </div>
+                <div className="flex gap-4">
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="converted">Converted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -238,37 +270,43 @@ export default function StaffQuotationsPage() {
             <CardTitle>Quotations ({filteredQuotations.length})</CardTitle>
           </CardHeader>
           <CardContent>
+              {loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Quotation</TableHead>
+                        <TableHead>Quotation #</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
                   <TableHead>Valid Until</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQuotations.map((quotation) => (
+                      {filteredQuotations.map((quotation) => {
+                        const StatusIcon = getStatusIcon(quotation.status);
+                        return (
                   <TableRow key={quotation._id}>
-                    <TableCell>
-                      <div className="font-medium">{quotation.quotationNumber}</div>
+                            <TableCell className="font-medium">
+                              {quotation.quotationNumber}
                     </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{quotation.customerName}</div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {quotation.customerEmail}
-                        </div>
+                                <div className="text-sm text-gray-500">{quotation.customerEmail}</div>
                         {quotation.customerPhone && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Phone className="h-3 w-3 mr-1" />
-                            {quotation.customerPhone}
-                          </div>
+                                  <div className="text-sm text-gray-500">{quotation.customerPhone}</div>
                         )}
                       </div>
                     </TableCell>
@@ -282,142 +320,112 @@ export default function StaffQuotationsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center text-sm font-medium">
-                        <DollarSign className="h-3 w-3 mr-1" />
-                        {quotation.totalAmount}
+                              <div className="text-right">
+                                <div className="font-medium">${quotation.totalAmount.toFixed(2)}</div>
+                                {quotation.discount > 0 && (
+                                  <div className="text-sm text-green-600">
+                                    -${quotation.discount.toFixed(2)} discount
+                                  </div>
+                                )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(quotation.status)}>
                         <span className="flex items-center gap-1">
-                          {getStatusIcon(quotation.status)}
+                                  <StatusIcon className="h-3 w-3" />
                           {quotation.status}
                         </span>
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-3 w-3 mr-1" />
+                            <TableCell className="text-sm text-gray-500">
+                              {formatDate(quotation.createdAt)}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
                         {formatDate(quotation.validUntil)}
-                      </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-500 max-w-xs truncate">
-                        {quotation.notes}
-                      </div>
-                    </TableCell>
-                    <TableCell>
+                            <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
+                                  <DropdownMenuItem onClick={() => handleViewDetails(quotation)}>
+                                    <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {quotation.status === 'pending' && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => handleApprove(quotation)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
+                                  {quotation.status === QuotationStatus.PENDING && (
+                                    <>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedQuotation(quotation);
+                                        setIsApproveDialogOpen(true);
+                                      }}>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
                                 Approve
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleReject(quotation)}
-                                className="text-red-600"
-                              >
-                                <XCircle className="h-4 w-4 mr-2" />
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedQuotation(quotation);
+                                        setIsRejectDialogOpen(true);
+                                      }}>
+                                        <XCircle className="mr-2 h-4 w-4" />
                                 Reject
                               </DropdownMenuItem>
                             </>
                           )}
+                                  {quotation.status === QuotationStatus.APPROVED && (
+                                    <DropdownMenuItem onClick={() => {
+                                      setSelectedQuotation(quotation);
+                                      setIsConvertDialogOpen(true);
+                                    }}>
+                                      <DollarSign className="mr-2 h-4 w-4" />
+                                      Convert to Order
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => {
+                                    setSelectedQuotation(quotation);
+                                    setIsReplyDialogOpen(true);
+                                  }}>
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    Reply
+                                  </DropdownMenuItem>
+                                  {quotation.prescriptionFile && (
+                                    <DropdownMenuItem>
+                                      <Download className="mr-2 h-4 w-4" />
+                                      Download Prescription
+                                    </DropdownMenuItem>
+                                  )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                        );
+                      })}
               </TableBody>
             </Table>
+                </div>
+              )}
           </CardContent>
         </Card>
 
-        {/* Approve Dialog */}
-        <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Approve Quotation</DialogTitle>
-              <DialogDescription>
-                Approve quotation {selectedQuotation?.quotationNumber} for {selectedQuotation?.customerName}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Staff Notes (Optional)</label>
-                <Textarea
-                  placeholder="Add any internal notes about this quotation..."
-                  value={staffNotes}
-                  onChange={(e) => setStaffNotes(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={confirmApprove}>
-                Approve Quotation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reject Dialog */}
-        <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Quotation</DialogTitle>
-              <DialogDescription>
-                Reject quotation {selectedQuotation?.quotationNumber} for {selectedQuotation?.customerName}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Rejection Reason *</label>
-                <Textarea
-                  placeholder="Explain why this quotation is being rejected..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Staff Notes (Optional)</label>
-                <Textarea
-                  placeholder="Add any internal notes about this rejection..."
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={confirmReject} variant="destructive">
-                Reject Quotation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          {/* Quotation Detail Modal */}
+          <QuotationDetailModal
+            quotation={selectedQuotation}
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setSelectedQuotation(null);
+            }}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onReply={handleReply}
+            onConvert={handleConvert}
+            isStaff={true}
+            loading={approveLoading || rejectLoading || replyLoading || convertLoading}
+          />
       </div>
+      </RoleGuard>
     </StaffLayout>
   );
 }

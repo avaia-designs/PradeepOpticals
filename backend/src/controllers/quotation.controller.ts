@@ -11,7 +11,7 @@ import { QuotationService } from '../services/quotation.service';
 // Extend Request interface to include user
 interface AuthenticatedRequest extends Request {
   user?: {
-    _id: string;
+    id: string;
     role: string;
   };
 }
@@ -22,7 +22,7 @@ interface AuthenticatedRequest extends Request {
 export const createQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const quotationData = {
-      userId: req.user?._id || undefined,
+      userId: req.user?.id || undefined,
       customerName: req.body.customerName,
       customerEmail: req.body.customerEmail,
       customerPhone: req.body.customerPhone,
@@ -67,7 +67,7 @@ export const createQuotation = async (req: AuthenticatedRequest, res: Response, 
 export const getUserQuotations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -166,7 +166,7 @@ export const getAllQuotations = async (req: AuthenticatedRequest, res: Response,
 export const getQuotationById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const userRole = req.user?.role;
 
     const quotation = await Quotation.findById(id).lean();
@@ -559,7 +559,7 @@ export const updateQuotation = async (req: AuthenticatedRequest, res: Response, 
 export const customerApproveQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -642,7 +642,7 @@ export const customerRejectQuotation = async (req: AuthenticatedRequest, res: Re
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -799,7 +799,7 @@ export const addStaffReply = async (req: AuthenticatedRequest, res: Response, ne
 export const deleteQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const userRole = req.user?.role;
 
     const quotation = await Quotation.findById(id);

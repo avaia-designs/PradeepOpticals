@@ -70,6 +70,12 @@ const adminNavigation = [
     icon: Calendar,
     permission: Permission.MANAGE_APPOINTMENTS,
   },
+  {
+    name: 'Quotations',
+    href: '/admin/quotations',
+    icon: FileText,
+    permission: Permission.MANAGE_QUOTATIONS,
+  },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

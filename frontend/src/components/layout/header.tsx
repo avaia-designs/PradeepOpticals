@@ -132,6 +132,9 @@ export function Header({ className }: HeaderProps) {
             <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">
               Products
             </Link>
+            <Link href="/quotations" className="text-sm font-medium hover:text-primary transition-colors">
+              Quotations
+            </Link>
           </nav>
 
           {/* Search Bar */}
@@ -334,6 +337,9 @@ function MobileNavigation({ onClose }: { onClose: () => void }) {
         <div className="text-sm font-medium text-muted-foreground mb-2">Shop</div>
         <Link href="/products" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
           All Products
+        </Link>
+        <Link href="/quotations" className="flex items-center py-2 text-sm hover:text-primary transition-colors" onClick={onClose}>
+          Quotations
         </Link>
       </nav>
 
