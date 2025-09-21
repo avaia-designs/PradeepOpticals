@@ -203,8 +203,8 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                       <div className="flex-1">
                         <h4 className="font-medium">{item.productName}</h4>
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-sm text-gray-600">Unit Price: ${item.unitPrice.toFixed(2)}</p>
-                        {Object.keys(item.specifications).length > 0 && (
+                        <p className="text-sm text-gray-600">Unit Price: ${(item.unitPrice || 0).toFixed(2)}</p>
+                        {item.specifications && Object.keys(item.specifications).length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm font-medium text-gray-700">Specifications:</p>
                             <div className="text-sm text-gray-600">
@@ -218,7 +218,7 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${item.totalPrice.toFixed(2)}</p>
+                        <p className="font-medium">${(item.totalPrice || 0).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -236,22 +236,22 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>${quotation.subtotal.toFixed(2)}</span>
+                  <span>${(quotation.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax:</span>
-                  <span>${quotation.tax.toFixed(2)}</span>
+                  <span>${(quotation.tax || 0).toFixed(2)}</span>
                 </div>
-                {quotation.discount > 0 && (
+                {(quotation.discount || 0) > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount:</span>
-                    <span>-${quotation.discount.toFixed(2)}</span>
+                    <span>-${(quotation.discount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between font-medium text-lg">
                   <span>Total:</span>
-                  <span>${quotation.totalAmount.toFixed(2)}</span>
+                  <span>${(quotation.totalAmount || 0).toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

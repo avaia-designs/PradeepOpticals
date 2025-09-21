@@ -5,7 +5,7 @@ export interface QuotationItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-  specifications: {
+  specifications?: {
     material?: string;
     color?: string;
     size?: string;

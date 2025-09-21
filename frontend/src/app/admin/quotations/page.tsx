@@ -60,149 +60,57 @@ import {
 import { RoleGuard } from '@/components/auth/role-guard';
 import { Permission } from '@/lib/permissions';
 import { QuotationDetailModal } from '@/components/quotations/QuotationDetailModal';
+import { useAllQuotations, useApproveQuotation, useRejectQuotation, useStaffReply, useConvertQuotationToOrder } from '@/hooks/useQuotations';
+import { Quotation, QuotationStatus } from '@/types/quotation';
+import { toast } from 'sonner';
 
 export default function AdminQuotationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
-  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
-  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
-  const [staffNotes, setStaffNotes] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [replyMessage, setReplyMessage] = useState('');
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Mock data - replace with actual API calls
-  const quotations = [
-    {
-      _id: '1',
-      quotationNumber: 'QUO-20241201-1234',
-      customerName: 'John Doe',
-      customerEmail: 'john@example.com',
-      customerPhone: '+1 234 567 8900',
-      items: [
-        { productName: 'Ray-Ban Aviator', quantity: 1, unitPrice: 150, totalPrice: 150 },
-        { productName: 'Custom Lenses', quantity: 1, unitPrice: 100, totalPrice: 100 },
-      ],
-      subtotal: 250,
-      tax: 25,
-      discount: 0,
-      totalAmount: 275,
-      status: 'pending',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer needs prescription lenses for reading',
-      prescriptionFile: 'prescription_1234.pdf',
-      createdAt: '2024-12-01T10:30:00Z',
-      staffReplies: [
-        {
-          message: 'We can offer a 10% discount on this quotation',
-          staffId: 'staff1',
-          repliedAt: '2024-12-01T11:00:00Z'
-        }
-      ]
-    },
-    {
-      _id: '2',
-      quotationNumber: 'QUO-20241201-1235',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane@example.com',
-      customerPhone: '+1 234 567 8901',
-      items: [
-        { productName: 'Oakley Sunglasses', quantity: 2, unitPrice: 120, totalPrice: 240 },
-      ],
-      subtotal: 240,
-      tax: 24,
-      discount: 0,
-      totalAmount: 264,
-      status: 'approved',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer approved the quotation',
-      prescriptionFile: null,
-      createdAt: '2024-11-30T15:45:00Z',
-      approvedAt: '2024-11-30T16:00:00Z',
-      approvedBy: 'staff1',
-      staffNotes: 'Approved with standard pricing'
-    },
-    {
-      _id: '3',
-      quotationNumber: 'QUO-20241201-1236',
-      customerName: 'Bob Johnson',
-      customerEmail: 'bob@example.com',
-      customerPhone: '+1 234 567 8902',
-      items: [
-        { productName: 'Gucci Frames', quantity: 1, unitPrice: 300, totalPrice: 300 },
-        { productName: 'Progressive Lenses', quantity: 1, unitPrice: 150, totalPrice: 150 },
-      ],
-      subtotal: 450,
-      tax: 45,
-      discount: 0,
-      totalAmount: 495,
-      status: 'converted',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer approved and converted to order',
-      prescriptionFile: 'prescription_1236.pdf',
-      createdAt: '2024-11-29T09:20:00Z',
-      approvedAt: '2024-11-29T10:00:00Z',
-      approvedBy: 'staff1',
-      customerApprovedAt: '2024-11-29T14:00:00Z',
-      convertedAt: '2024-11-29T15:00:00Z',
-      convertedToOrder: 'ORD-20241129-0001'
-    },
-    {
-      _id: '4',
-      quotationNumber: 'QUO-20241201-1237',
-      customerName: 'Alice Brown',
-      customerEmail: 'alice@example.com',
-      customerPhone: '+1 234 567 8903',
-      items: [
-        { productName: 'Prada Sunglasses', quantity: 1, unitPrice: 400, totalPrice: 400 },
-      ],
-      subtotal: 400,
-      tax: 40,
-      discount: 0,
-      totalAmount: 440,
-      status: 'rejected',
-      validUntil: '2024-12-31T23:59:59Z',
-      notes: 'Customer found the price too high',
-      prescriptionFile: null,
-      createdAt: '2024-11-28T14:30:00Z',
-      rejectedAt: '2024-11-28T15:00:00Z',
-      rejectedBy: 'staff1',
-      rejectedReason: 'Price exceeds customer budget',
-      customerRejectedAt: '2024-11-28T16:00:00Z',
-      customerRejectionReason: 'Too expensive'
-    },
-  ];
+  // API hooks
+  const { quotations, loading, error, refetch } = useAllQuotations({
+    page: 1,
+    limit: 50,
+    status: selectedStatus === 'all' ? undefined : selectedStatus as QuotationStatus,
+    search: searchTerm || undefined
+  });
 
-  const getStatusColor = (status: string) => {
+  const { approveQuotation, loading: approveLoading } = useApproveQuotation();
+  const { rejectQuotation, loading: rejectLoading } = useRejectQuotation();
+  const { addStaffReply, loading: replyLoading } = useStaffReply();
+  const { convertQuotationToOrder, loading: convertLoading } = useConvertQuotationToOrder();
+
+  const getStatusColor = (status: QuotationStatus) => {
     switch (status) {
-      case 'pending':
+      case QuotationStatus.PENDING:
         return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
+      case QuotationStatus.APPROVED:
         return 'bg-blue-100 text-blue-800';
-      case 'rejected':
+      case QuotationStatus.REJECTED:
         return 'bg-red-100 text-red-800';
-      case 'converted':
+      case QuotationStatus.CONVERTED:
         return 'bg-green-100 text-green-800';
-      case 'expired':
+      case QuotationStatus.EXPIRED:
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: QuotationStatus) => {
     switch (status) {
-      case 'pending':
+      case QuotationStatus.PENDING:
         return Clock;
-      case 'approved':
+      case QuotationStatus.APPROVED:
         return CheckCircle;
-      case 'rejected':
+      case QuotationStatus.REJECTED:
         return XCircle;
-      case 'converted':
+      case QuotationStatus.CONVERTED:
         return DollarSign;
-      case 'expired':
+      case QuotationStatus.EXPIRED:
         return Clock;
       default:
         return Clock;
@@ -219,45 +127,79 @@ export default function AdminQuotationsPage() {
     });
   };
 
+  const handleApprove = async (quotation: Quotation, staffNotes?: string) => {
+    try {
+      const success = await approveQuotation(quotation._id, {
+        staffNotes: staffNotes || undefined
+      });
+      if (success) {
+        toast.success('Quotation approved successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to approve quotation');
+    }
+  };
+
+  const handleReject = async (quotation: Quotation, reason: string, staffNotes?: string) => {
+    try {
+      const success = await rejectQuotation(quotation._id, {
+        reason,
+        staffNotes: staffNotes || undefined
+      });
+      if (success) {
+        toast.success('Quotation rejected successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to reject quotation');
+    }
+  };
+
+  const handleReply = async (quotation: Quotation, message: string) => {
+    try {
+      const success = await addStaffReply(quotation._id, {
+        message
+      });
+      if (success) {
+        toast.success('Reply sent successfully!');
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to send reply');
+    }
+  };
+
+  const handleConvert = async (quotation: Quotation) => {
+    try {
+      const success = await convertQuotationToOrder(quotation._id);
+      if (success) {
+        toast.success('Quotation converted to order successfully!');
+        setIsDetailModalOpen(false);
+        refetch();
+      }
+    } catch (error) {
+      toast.error('Failed to convert quotation to order');
+    }
+  };
+
+  const handleViewDetails = (quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setIsDetailModalOpen(true);
+  };
+
   const filteredQuotations = quotations.filter(quotation => {
     const matchesSearch = quotation.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quotation.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = selectedStatus === 'all' || quotation.status === selectedStatus;
+
     return matchesSearch && matchesStatus;
   });
 
-  const handleApprove = () => {
-    // Implement approval logic
-    console.log('Approving quotation:', selectedQuotation?._id, staffNotes);
-    setIsApproveDialogOpen(false);
-    setStaffNotes('');
-  };
-
-  const handleReject = () => {
-    // Implement rejection logic
-    console.log('Rejecting quotation:', selectedQuotation?._id, rejectionReason, staffNotes);
-    setIsRejectDialogOpen(false);
-    setRejectionReason('');
-    setStaffNotes('');
-  };
-
-  const handleReply = () => {
-    // Implement reply logic
-    console.log('Replying to quotation:', selectedQuotation?._id, replyMessage);
-    setIsReplyDialogOpen(false);
-    setReplyMessage('');
-  };
-
-  const handleConvert = () => {
-    // Implement conversion logic
-    console.log('Converting quotation to order:', selectedQuotation?._id);
-    setIsConvertDialogOpen(false);
-  };
-
-  const handleViewDetails = (quotation: any) => {
-    setSelectedQuotation(quotation);
-  };
 
   return (
     <AdminLayout>
@@ -274,7 +216,7 @@ export default function AdminQuotationsPage() {
                 Total: {quotations.length}
               </Badge>
               <Badge variant="outline" className="text-sm">
-                Pending: {quotations.filter(q => q.status === 'pending').length}
+                Pending: {quotations.filter(q => q.status === QuotationStatus.PENDING).length}
               </Badge>
             </div>
           </div>
@@ -301,10 +243,11 @@ export default function AdminQuotationsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="converted">Converted</SelectItem>
+                      <SelectItem value={QuotationStatus.PENDING}>Pending</SelectItem>
+                      <SelectItem value={QuotationStatus.APPROVED}>Approved</SelectItem>
+                      <SelectItem value={QuotationStatus.REJECTED}>Rejected</SelectItem>
+                      <SelectItem value={QuotationStatus.CONVERTED}>Converted</SelectItem>
+                      <SelectItem value={QuotationStatus.EXPIRED}>Expired</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -318,8 +261,32 @@ export default function AdminQuotationsPage() {
               <CardTitle>Quotations ({filteredQuotations.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading quotations...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <p className="text-red-600 mb-4">Failed to load quotations</p>
+                    <Button onClick={() => refetch()} variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                </div>
+              ) : filteredQuotations.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No quotations found</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Quotation #</TableHead>
@@ -393,40 +360,6 @@ export default function AdminQuotationsPage() {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              {quotation.status === 'pending' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => {
-                                    setSelectedQuotation(quotation);
-                                    setIsApproveDialogOpen(true);
-                                  }}>
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Approve
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => {
-                                    setSelectedQuotation(quotation);
-                                    setIsRejectDialogOpen(true);
-                                  }}>
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {quotation.status === 'approved' && (
-                                <DropdownMenuItem onClick={() => {
-                                  setSelectedQuotation(quotation);
-                                  setIsConvertDialogOpen(true);
-                                }}>
-                                  <DollarSign className="mr-2 h-4 w-4" />
-                                  Convert to Order
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedQuotation(quotation);
-                                setIsReplyDialogOpen(true);
-                              }}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Reply
-                              </DropdownMenuItem>
                               {quotation.prescriptionFile && (
                                 <DropdownMenuItem>
                                   <Download className="mr-2 h-4 w-4" />
@@ -440,148 +373,26 @@ export default function AdminQuotationsPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Approve Dialog */}
-          <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Approve Quotation</DialogTitle>
-                <DialogDescription>
-                  Approve quotation {selectedQuotation?.quotationNumber} for {selectedQuotation?.customerName}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Staff Notes (Optional)</label>
-                  <Textarea
-                    placeholder="Add any notes about this approval..."
-                    value={staffNotes}
-                    onChange={(e) => setStaffNotes(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleApprove}>
-                  Approve Quotation
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Reject Dialog */}
-          <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Reject Quotation</DialogTitle>
-                <DialogDescription>
-                  Reject quotation {selectedQuotation?.quotationNumber} for {selectedQuotation?.customerName}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Rejection Reason *</label>
-                  <Textarea
-                    placeholder="Please provide a reason for rejection..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    className="mt-1"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Staff Notes (Optional)</label>
-                  <Textarea
-                    placeholder="Add any additional notes..."
-                    value={staffNotes}
-                    onChange={(e) => setStaffNotes(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handleReject} disabled={!rejectionReason}>
-                  Reject Quotation
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Reply Dialog */}
-          <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Reply to Customer</DialogTitle>
-                <DialogDescription>
-                  Send a message to {selectedQuotation?.customerName} about quotation {selectedQuotation?.quotationNumber}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Message *</label>
-                  <Textarea
-                    placeholder="Type your message to the customer..."
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    className="mt-1"
-                    rows={4}
-                    required
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsReplyDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleReply} disabled={!replyMessage}>
-                  Send Reply
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Convert Dialog */}
-          <Dialog open={isConvertDialogOpen} onOpenChange={setIsConvertDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Convert to Order</DialogTitle>
-                <DialogDescription>
-                  Convert quotation {selectedQuotation?.quotationNumber} to an order for {selectedQuotation?.customerName}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Order Summary</h4>
-                  <div className="space-y-1 text-sm">
-                    <div>Subtotal: ${selectedQuotation?.subtotal?.toFixed(2)}</div>
-                    <div>Tax: ${selectedQuotation?.tax?.toFixed(2)}</div>
-                    <div>Discount: ${selectedQuotation?.discount?.toFixed(2)}</div>
-                    <div className="font-medium">Total: ${selectedQuotation?.totalAmount?.toFixed(2)}</div>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600">
-                  This will create a new order and update product inventory.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsConvertDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleConvert}>
-                  Convert to Order
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* Quotation Detail Modal */}
+          <QuotationDetailModal
+            quotation={selectedQuotation}
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setSelectedQuotation(null);
+            }}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onReply={handleReply}
+            onConvert={handleConvert}
+            isStaff={true}
+            loading={approveLoading || rejectLoading || replyLoading || convertLoading}
+          />
         </div>
       </RoleGuard>
     </AdminLayout>
