@@ -21,6 +21,17 @@ export const generateAppointmentNumber = (): string => {
 };
 
 /**
+ * Generate a unique quotation number
+ * Format: QUO-YYYYMMDD-XXXX
+ */
+export const generateQuotationNumber = (): string => {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `QUO-${dateStr}-${randomNum}`;
+};
+
+/**
  * Calculate order totals
  */
 export const calculateOrderTotals = (items: any[], taxRate: number = 0.1, discount: number = 0) => {

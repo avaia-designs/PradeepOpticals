@@ -51,6 +51,14 @@ export interface IQuotation extends BaseModel {
   convertedAt?: Date;
   convertedToOrder?: string; // Order ID if converted
   staffNotes?: string; // Internal notes from staff
+  customerApprovedAt?: Date;
+  customerRejectedAt?: Date;
+  customerRejectionReason?: string;
+  staffReplies?: Array<{
+    message: string;
+    staffId: string;
+    repliedAt: Date;
+  }>;
 }
 
 // Quotation document interface for Mongoose
@@ -207,7 +215,36 @@ const quotationSchema = new Schema<IQuotationDocument>({
     type: String,
     trim: true,
     maxlength: [1000, 'Staff notes cannot exceed 1000 characters']
-  }
+  },
+  customerApprovedAt: {
+    type: Date,
+    default: null
+  },
+  customerRejectedAt: {
+    type: Date,
+    default: null
+  },
+  customerRejectionReason: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Customer rejection reason cannot exceed 500 characters']
+  },
+  staffReplies: [{
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [1000, 'Staff reply message cannot exceed 1000 characters']
+    },
+    staffId: {
+      type: String,
+      required: true
+    },
+    repliedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: { createdAt: 'createdAt', updatedAt: 'modifiedAt' },
   versionKey: false

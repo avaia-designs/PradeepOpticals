@@ -8,10 +8,21 @@ import {
   rejectQuotation,
   convertQuotationToOrder,
   updateQuotation,
-  deleteQuotation
+  deleteQuotation,
+  customerApproveQuotation,
+  customerRejectQuotation,
+  addStaffReply
 } from '../controllers/quotation.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize } from '../middleware/auth.middleware';
+import {
+  validateCreateQuotation,
+  validateUpdateQuotation,
+  validateApproveQuotation,
+  validateRejectQuotation,
+  validateCustomerRejectQuotation,
+  validateStaffReply
+} from '../middleware/quotationValidation.middleware';
 
 const router = Router();
 
@@ -20,7 +31,7 @@ const router = Router();
  * @desc    Create a new quotation request
  * @access  Private (Customer, Staff, Admin)
  */
-router.post('/', authenticate, createQuotation);
+router.post('/', authenticate, validateCreateQuotation, createQuotation);
 
 /**
  * @route   GET /api/v1/quotations
@@ -48,14 +59,14 @@ router.get('/:id', authenticate, getQuotationById);
  * @desc    Approve quotation (Staff/Admin only)
  * @access  Private (Staff, Admin)
  */
-router.put('/:id/approve', authenticate, authorize(['staff', 'admin']), approveQuotation);
+router.put('/:id/approve', authenticate, authorize(['staff', 'admin']), validateApproveQuotation, approveQuotation);
 
 /**
  * @route   PUT /api/v1/quotations/:id/reject
  * @desc    Reject quotation (Staff/Admin only)
  * @access  Private (Staff, Admin)
  */
-router.put('/:id/reject', authenticate, authorize(['staff', 'admin']), rejectQuotation);
+router.put('/:id/reject', authenticate, authorize(['staff', 'admin']), validateRejectQuotation, rejectQuotation);
 
 /**
  * @route   POST /api/v1/quotations/:id/convert
@@ -69,7 +80,7 @@ router.post('/:id/convert', authenticate, authorize(['staff', 'admin']), convert
  * @desc    Update quotation (Staff/Admin only)
  * @access  Private (Staff, Admin)
  */
-router.put('/:id', authenticate, authorize(['staff', 'admin']), updateQuotation);
+router.put('/:id', authenticate, authorize(['staff', 'admin']), validateUpdateQuotation, updateQuotation);
 
 /**
  * @route   DELETE /api/v1/quotations/:id
@@ -77,5 +88,26 @@ router.put('/:id', authenticate, authorize(['staff', 'admin']), updateQuotation)
  * @access  Private (Customer, Staff, Admin)
  */
 router.delete('/:id', authenticate, deleteQuotation);
+
+/**
+ * @route   PUT /api/v1/quotations/:id/customer-approve
+ * @desc    Customer approve quotation
+ * @access  Private (Customer)
+ */
+router.put('/:id/customer-approve', authenticate, customerApproveQuotation);
+
+/**
+ * @route   PUT /api/v1/quotations/:id/customer-reject
+ * @desc    Customer reject quotation
+ * @access  Private (Customer)
+ */
+router.put('/:id/customer-reject', authenticate, validateCustomerRejectQuotation, customerRejectQuotation);
+
+/**
+ * @route   POST /api/v1/quotations/:id/staff-reply
+ * @desc    Add staff reply to quotation
+ * @access  Private (Staff, Admin)
+ */
+router.post('/:id/staff-reply', authenticate, authorize(['staff', 'admin']), validateStaffReply, addStaffReply);
 
 export default router;

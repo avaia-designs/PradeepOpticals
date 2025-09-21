@@ -4,8 +4,9 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
 import { ApiResponse } from '../types';
-import { generateOrderNumber } from '../utils/orderUtils';
+import { generateOrderNumber, generateQuotationNumber } from '../utils/orderUtils';
 import { NotificationService } from '../services/notification.service';
+import { QuotationService } from '../services/quotation.service';
 
 // Extend Request interface to include user
 interface AuthenticatedRequest extends Request {
@@ -20,83 +21,17 @@ interface AuthenticatedRequest extends Request {
  */
 export const createQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const {
-      customerName,
-      customerEmail,
-      customerPhone,
-      items,
-      notes,
-      prescriptionFile
-    } = req.body;
+    const quotationData = {
+      userId: req.user?._id || undefined,
+      customerName: req.body.customerName,
+      customerEmail: req.body.customerEmail,
+      customerPhone: req.body.customerPhone,
+      items: req.body.items,
+      notes: req.body.notes,
+      prescriptionFile: req.body.prescriptionFile
+    };
 
-    // Validate required fields
-    if (!customerName || !customerEmail || !items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'VALIDATION_ERROR',
-        message: 'Customer name, email, and items are required'
-      });
-    }
-
-    // Validate and calculate totals
-    let subtotal = 0;
-    const validatedItems = [];
-
-    for (const item of items) {
-      const product = await Product.findById(item.productId);
-      if (!product) {
-        return res.status(400).json({
-          success: false,
-          error: 'PRODUCT_NOT_FOUND',
-          message: `Product with ID ${item.productId} not found`
-        });
-      }
-
-      if (product.inventory < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          error: 'INSUFFICIENT_INVENTORY',
-          message: `Insufficient inventory for product ${product.name}`
-        });
-      }
-
-      const unitPrice = product.price;
-      const totalPrice = unitPrice * item.quantity;
-      subtotal += totalPrice;
-
-      validatedItems.push({
-        productId: product._id.toString(),
-        productName: product.name,
-        productImage: product.images[0] || '',
-        quantity: item.quantity,
-        unitPrice,
-        totalPrice,
-        specifications: item.specifications || {}
-      });
-    }
-
-    // Calculate tax and discount (simplified for now)
-    const tax = subtotal * 0.1; // 10% tax
-    const discount = 0; // No discount initially
-    const totalAmount = subtotal + tax - discount;
-
-    // Create quotation
-    const quotation = new Quotation({
-      userId: req.user?._id || null,
-      customerName,
-      customerEmail,
-      customerPhone,
-      items: validatedItems,
-      subtotal,
-      tax,
-      discount,
-      totalAmount,
-      status: QuotationStatus.PENDING,
-      notes,
-      prescriptionFile
-    });
-
-    await quotation.save();
+    const quotation = await QuotationService.createQuotation(quotationData);
 
     const response: ApiResponse = {
       success: true,
@@ -106,6 +41,22 @@ export const createQuotation = async (req: AuthenticatedRequest, res: Response, 
 
     res.status(201).json(response);
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: 'PRODUCT_NOT_FOUND',
+          message: error.message
+        });
+      }
+      if (error.message.includes('Insufficient inventory')) {
+        return res.status(400).json({
+          success: false,
+          error: 'INSUFFICIENT_INVENTORY',
+          message: error.message
+        });
+      }
+    }
     next(error);
   }
 };
@@ -594,6 +545,246 @@ export const updateQuotation = async (req: AuthenticatedRequest, res: Response, 
       success: true,
       data: quotation,
       message: 'Quotation updated successfully'
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Customer approve quotation
+ */
+export const customerApproveQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'User not authenticated'
+      });
+    }
+
+    const quotation = await Quotation.findById(id);
+
+    if (!quotation) {
+      return res.status(404).json({
+        success: false,
+        error: 'NOT_FOUND',
+        message: 'Quotation not found'
+      });
+    }
+
+    // Check if user owns this quotation
+    if (quotation.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'FORBIDDEN',
+        message: 'Access denied'
+      });
+    }
+
+    if (quotation.status !== QuotationStatus.APPROVED) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_STATUS',
+        message: 'Only staff-approved quotations can be customer-approved'
+      });
+    }
+
+    // Check if quotation is still valid
+    if (quotation.validUntil < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'EXPIRED',
+        message: 'Quotation has expired'
+      });
+    }
+
+    // Update quotation status to customer approved
+    quotation.status = QuotationStatus.CONVERTED; // Ready for order conversion
+    quotation.customerApprovedAt = new Date();
+    await quotation.save();
+
+    // Create notification for staff
+    try {
+      await NotificationService.createCustomerApprovalNotification(
+        quotation.approvedBy || 'staff',
+        {
+          quotationNumber: quotation.quotationNumber,
+          customerName: quotation.customerName
+        }
+      );
+    } catch (notificationError) {
+      console.error('Failed to create customer approval notification:', notificationError);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: quotation,
+      message: 'Quotation approved successfully. Ready for order conversion.'
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Customer reject quotation
+ */
+export const customerRejectQuotation = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'User not authenticated'
+      });
+    }
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Rejection reason is required'
+      });
+    }
+
+    const quotation = await Quotation.findById(id);
+
+    if (!quotation) {
+      return res.status(404).json({
+        success: false,
+        error: 'NOT_FOUND',
+        message: 'Quotation not found'
+      });
+    }
+
+    // Check if user owns this quotation
+    if (quotation.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'FORBIDDEN',
+        message: 'Access denied'
+      });
+    }
+
+    if (quotation.status !== QuotationStatus.APPROVED) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_STATUS',
+        message: 'Only staff-approved quotations can be customer-rejected'
+      });
+    }
+
+    // Update quotation status
+    quotation.status = QuotationStatus.REJECTED;
+    quotation.customerRejectedAt = new Date();
+    quotation.customerRejectionReason = reason;
+    await quotation.save();
+
+    // Create notification for staff
+    try {
+      await NotificationService.createCustomerRejectionNotification(
+        quotation.approvedBy || 'staff',
+        {
+          quotationNumber: quotation.quotationNumber,
+          customerName: quotation.customerName,
+          reason
+        }
+      );
+    } catch (notificationError) {
+      console.error('Failed to create customer rejection notification:', notificationError);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: quotation,
+      message: 'Quotation rejected successfully'
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Add staff reply to quotation
+ */
+export const addStaffReply = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+    const staffId = req.user?._id;
+    const userRole = req.user?.role;
+
+    if (!['staff', 'admin'].includes(userRole || '')) {
+      return res.status(403).json({
+        success: false,
+        error: 'FORBIDDEN',
+        message: 'Access denied. Staff or Admin role required.'
+      });
+    }
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Message is required'
+      });
+    }
+
+    const quotation = await Quotation.findById(id);
+
+    if (!quotation) {
+      return res.status(404).json({
+        success: false,
+        error: 'NOT_FOUND',
+        message: 'Quotation not found'
+      });
+    }
+
+    // Add staff reply to quotation
+    if (!quotation.staffReplies) {
+      quotation.staffReplies = [];
+    }
+
+    quotation.staffReplies.push({
+      message,
+      staffId: staffId!,
+      repliedAt: new Date()
+    });
+
+    await quotation.save();
+
+    // Create notification for customer
+    try {
+      await NotificationService.createStaffReplyNotification(
+        quotation.userId,
+        {
+          quotationNumber: quotation.quotationNumber,
+          message
+        }
+      );
+    } catch (notificationError) {
+      console.error('Failed to create staff reply notification:', notificationError);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: quotation,
+      message: 'Staff reply added successfully'
     };
 
     res.json(response);
