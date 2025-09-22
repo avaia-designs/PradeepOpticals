@@ -384,7 +384,7 @@ export const convertQuotationToOrder = async (req: AuthenticatedRequest, res: Re
 
     // Create order from quotation
     const orderNumber = generateOrderNumber();
-    
+
     const order = new Order({
       orderNumber,
       userId: quotation.userId,

@@ -285,7 +285,7 @@ export class NotificationService {
     actionUrl?: string
   ) {
     const notifications = [];
-    
+
     for (const userId of userIds) {
       try {
         const notification = await this.createNotification({

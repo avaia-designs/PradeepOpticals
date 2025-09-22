@@ -167,9 +167,9 @@ notificationSchema.statics.getUserNotifications = function(
 notificationSchema.statics.markAsRead = function(notificationIds: string[], userId: string) {
   return this.updateMany(
     { _id: { $in: notificationIds }, userId },
-    { 
-      isRead: true, 
-      readAt: new Date() 
+    {
+      isRead: true,
+      readAt: new Date()
     }
   );
 };
@@ -178,9 +178,9 @@ notificationSchema.statics.markAsRead = function(notificationIds: string[], user
 notificationSchema.statics.markAllAsRead = function(userId: string) {
   return this.updateMany(
     { userId, isRead: false },
-    { 
-      isRead: true, 
-      readAt: new Date() 
+    {
+      isRead: true,
+      readAt: new Date()
     }
   );
 };
@@ -223,7 +223,7 @@ interface INotificationModel extends mongoose.Model<INotificationDocument> {
       expiresAt?: Date;
     }
   ): Promise<INotificationDocument>;
-  
+
   getUserNotifications(
     userId: string,
     options?: {
@@ -234,7 +234,7 @@ interface INotificationModel extends mongoose.Model<INotificationDocument> {
       priority?: NotificationPriority;
     }
   ): Promise<INotificationDocument[]>;
-  
+
   markAsRead(notificationIds: string[], userId: string): Promise<any>;
   markAllAsRead(userId: string): Promise<any>;
   getUnreadCount(userId: string): Promise<number>;

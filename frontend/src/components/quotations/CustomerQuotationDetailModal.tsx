@@ -161,37 +161,49 @@ export const CustomerQuotationDetailModal: React.FC<CustomerQuotationDetailModal
 
   if (loading) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-2">
-              <RefreshCw className="h-6 w-6 animate-spin" />
-              <span>Loading quotation details...</span>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+			<Dialog open={isOpen} onOpenChange={onClose}>
+				<DialogContent className='max-w-4xl max-h-[90vh]'>
+					<DialogHeader>
+						<DialogTitle className='sr-only'>
+							Loading Quotation Details
+						</DialogTitle>
+					</DialogHeader>
+					<div className='flex items-center justify-center py-12'>
+						<div className='flex items-center space-x-2'>
+							<RefreshCw className='h-6 w-6 animate-spin' />
+							<span>Loading quotation details...</span>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
   }
 
   if (error) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Quotation</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={refetch} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+			<Dialog open={isOpen} onOpenChange={onClose}>
+				<DialogContent className='max-w-4xl max-h-[90vh]'>
+					<DialogHeader>
+						<DialogTitle className='sr-only'>
+							Error Loading Quotation
+						</DialogTitle>
+					</DialogHeader>
+					<div className='flex items-center justify-center py-12'>
+						<div className='text-center'>
+							<AlertCircle className='h-12 w-12 text-red-500 mx-auto mb-4' />
+							<h3 className='text-lg font-medium text-gray-900 mb-2'>
+								Error Loading Quotation
+							</h3>
+							<p className='text-gray-600 mb-4'>{error}</p>
+							<Button onClick={refetch} variant='outline'>
+								<RefreshCw className='h-4 w-4 mr-2' />
+								Try Again
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
   }
 
   if (!quotation) return null;
