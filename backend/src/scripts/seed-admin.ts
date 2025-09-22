@@ -20,9 +20,16 @@ interface AdminUserData {
 
 const ADMIN_DATA: AdminUserData = {
   email: 'admin@gmail.com',
-  password: 'Admin1234@',
+  password: 'Test1234@',
   name: 'System Administrator',
   role: UserRole.ADMIN
+};
+
+const STAFF_DATA: AdminUserData = {
+  email: 'staff@gmail.com',
+  password: 'Test1234@',
+  name: 'Staff Member',
+  role: UserRole.STAFF
 };
 
 /**
@@ -47,27 +54,27 @@ async function adminExists(email: string): Promise<boolean> {
 }
 
 /**
- * Create admin user
+ * Create user (admin or staff)
  */
-async function createAdminUser(adminData: AdminUserData): Promise<void> {
+async function createUser(userData: AdminUserData): Promise<void> {
   try {
-    // Check if admin already exists
-    const exists = await adminExists(adminData.email);
+    // Check if user already exists
+    const exists = await adminExists(userData.email);
     if (exists) {
-      Logger.warn('Admin user already exists', { email: adminData.email });
-      console.log('❌ Admin user already exists with email:', adminData.email);
+      Logger.warn('User already exists', { email: userData.email });
+      console.log('❌ User already exists with email:', userData.email);
       return;
     }
 
     // Hash the password
-    const hashedPassword = await hashPassword(adminData.password);
+    const hashedPassword = await hashPassword(userData.password);
 
-    // Create admin user
-    const adminUser = new User({
-      email: adminData.email.toLowerCase(),
+    // Create user
+    const user = new User({
+      email: userData.email.toLowerCase(),
       password: hashedPassword,
-      name: adminData.name,
-      role: adminData.role,
+      name: userData.name,
+      role: userData.role,
       profile: {
         avatar: null,
         phone: null,
@@ -78,23 +85,23 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
     });
 
     // Save to database
-    await adminUser.save();
+    await user.save();
 
-    Logger.info('Admin user created successfully', {
-      email: adminData.email,
-      role: adminData.role,
-      userId: adminUser._id
+    Logger.info('User created successfully', {
+      email: userData.email,
+      role: userData.role,
+      userId: user._id
     });
 
-    console.log('✅ Admin user created successfully!');
-    console.log('📧 Email:', adminData.email);
-    console.log('🔑 Password:', adminData.password);
-    console.log('👤 Role:', adminData.role);
-    console.log('🆔 User ID:', adminUser._id);
+    console.log('✅ User created successfully!');
+    console.log('📧 Email:', userData.email);
+    console.log('🔑 Password:', userData.password);
+    console.log('👤 Role:', userData.role);
+    console.log('🆔 User ID:', user._id);
 
   } catch (error) {
-    Logger.error('Failed to create admin user', error as Error);
-    console.error('❌ Failed to create admin user:', error);
+    Logger.error('Failed to create user', error as Error);
+    console.error('❌ Failed to create user:', error);
     throw error;
   }
 }
@@ -104,25 +111,30 @@ async function createAdminUser(adminData: AdminUserData): Promise<void> {
  */
 async function seedAdmin(): Promise<void> {
   try {
-    console.log('🌱 Starting admin user seeding...');
+    console.log('🌱 Starting admin and staff user seeding...');
     
     // Connect to database
     await database.connect();
     console.log('📊 Connected to database');
 
     // Create admin user
-    await createAdminUser(ADMIN_DATA);
+    console.log('👑 Creating admin user...');
+    await createUser(ADMIN_DATA);
 
-    console.log('🎉 Admin seeding completed successfully!');
+    // Create staff user
+    console.log('👨‍💼 Creating staff user...');
+    await createUser(STAFF_DATA);
+
+    console.log('🎉 User seeding completed successfully!');
     console.log('');
     console.log('🔐 You can now login with:');
-    console.log('   Email: admin@gmail.com');
-    console.log('   Password: Admin1234@');
+    console.log('   Admin: admin@gmail.com / Test1234@');
+    console.log('   Staff: staff@gmail.com / Test1234@');
     console.log('');
 
   } catch (error) {
-    Logger.error('Admin seeding failed', error as Error);
-    console.error('❌ Admin seeding failed:', error);
+    Logger.error('User seeding failed', error as Error);
+    console.error('❌ User seeding failed:', error);
     process.exit(1);
   } finally {
     // Disconnect from database
@@ -140,4 +152,4 @@ if (import.meta.main) {
   });
 }
 
-export { seedAdmin, createAdminUser, adminExists };
+export { seedAdmin, createUser, adminExists };

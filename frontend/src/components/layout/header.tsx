@@ -132,9 +132,9 @@ export function Header({ className }: HeaderProps) {
             <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">
               Products
             </Link>
-            <Link href="/quotations" className="text-sm font-medium hover:text-primary transition-colors">
+            {/* <Link href="/quotations" className="text-sm font-medium hover:text-primary transition-colors">
               Quotations
-            </Link>
+            </Link> */}
           </nav>
 
           {/* Search Bar */}

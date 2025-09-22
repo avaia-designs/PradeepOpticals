@@ -7,8 +7,7 @@
  */
 
 import { seedAdmin } from './seed-admin';
-import { seedProducts } from './seed-products';
-import { seedSampleData } from './seed-sample-data';
+import { seedCategoriesAndBrands } from './seed-products';
 import { Logger } from '../utils/logger';
 
 /**
@@ -19,38 +18,28 @@ async function seedAll(): Promise<void> {
     console.log('🚀 Starting complete database seeding...');
     console.log('=====================================');
     
-    // Step 1: Seed admin user
-    console.log('\n1️⃣ Seeding admin user...');
+    // Step 1: Seed admin and staff users
+    console.log('\n1️⃣ Seeding admin and staff users...');
     await seedAdmin();
-    console.log('✅ Admin user seeding completed');
+    console.log('✅ User seeding completed');
     
-    // Step 2: Seed products, categories, and brands
-    console.log('\n2️⃣ Seeding products, categories, and brands...');
-    await seedProducts();
-    console.log('✅ Product seeding completed');
-    
-    // Step 3: Seed sample data (customers, staff, orders, appointments)
-    console.log('\n3️⃣ Seeding sample data...');
-    await seedSampleData();
-    console.log('✅ Sample data seeding completed');
+    // Step 2: Seed categories and brands
+    console.log('\n2️⃣ Seeding categories and brands...');
+    await seedCategoriesAndBrands();
+    console.log('✅ Categories and brands seeding completed');
     
     console.log('\n🎉 All seeding completed successfully!');
     console.log('=====================================');
     console.log('');
     console.log('📊 Database Summary:');
     console.log('   ✅ Admin account created');
+    console.log('   ✅ Staff account created');
     console.log('   ✅ 6 categories created');
     console.log('   ✅ 8 brands created');
-    console.log('   ✅ 10 products created');
-    console.log('   ✅ 4 sample customers created');
-    console.log('   ✅ 2 sample staff created');
-    console.log('   ✅ 3 sample orders created');
-    console.log('   ✅ 4 sample appointments created');
     console.log('');
     console.log('🔐 Login Credentials:');
-    console.log('   Admin: admin@gmail.com / Admin1234@');
-    console.log('   Staff: staff1@pradeepopticals.com / Staff123!');
-    console.log('   Customer: john.doe@example.com / Password123!');
+    console.log('   Admin: admin@gmail.com / Test1234@');
+    console.log('   Staff: staff@gmail.com / Test1234@');
     console.log('');
     console.log('🌐 Next Steps:');
     console.log('   1. Start the backend server: bun run dev');
