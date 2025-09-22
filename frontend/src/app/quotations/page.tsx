@@ -37,6 +37,7 @@ import { Permission } from '@/lib/permissions';
 import { useQuotations, useCreateQuotation, useCustomerApproveQuotation, useCustomerRejectQuotation } from '@/hooks/useQuotations';
 import { QuotationCard } from '@/components/quotations/QuotationCard';
 import { QuotationForm } from '@/components/quotations/QuotationForm';
+import { CustomerQuotationDetailModal } from '@/components/quotations/CustomerQuotationDetailModal';
 import { Quotation, QuotationStatus, CreateQuotationRequest } from '@/types/quotation';
 import { toast } from 'sonner';
 
@@ -45,7 +46,8 @@ export default function QuotationsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -89,12 +91,10 @@ export default function QuotationsPage() {
     }
   };
 
-  const handleRejectQuotation = async () => {
-    if (!selectedQuotation || !rejectionReason.trim()) return;
-
+  const handleRejectQuotation = async (quotation: Quotation, reason: string) => {
     try {
-      const success = await customerRejectQuotation(selectedQuotation._id, {
-        reason: rejectionReason
+      const success = await customerRejectQuotation(quotation._id, {
+        reason: reason
       });
       if (success) {
         toast.success('Quotation rejected successfully');
@@ -108,8 +108,8 @@ export default function QuotationsPage() {
   };
 
   const handleViewDetails = (quotation: Quotation) => {
-    setSelectedQuotation(quotation);
-    // TODO: Implement detailed view modal
+    setSelectedQuotationId(quotation._id);
+    setIsDetailModalOpen(true);
   };
 
   const filteredQuotations = quotations.filter(quotation => {
@@ -247,7 +247,7 @@ export default function QuotationsPage() {
                 onViewDetails={handleViewDetails}
                 onApprove={quotation.status === QuotationStatus.APPROVED ? handleApproveQuotation : undefined}
                 onReject={quotation.status === QuotationStatus.APPROVED ? (quotation) => {
-                  setSelectedQuotation(quotation);
+                  setSelectedQuotationId(quotation._id);
                   setIsRejectDialogOpen(true);
                 } : undefined}
                 showActions={true}
@@ -265,13 +265,25 @@ export default function QuotationsPage() {
           loading={createLoading}
         />
 
+        {/* Customer Quotation Detail Modal */}
+        <CustomerQuotationDetailModal
+          quotationId={selectedQuotationId}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedQuotationId(null);
+          }}
+          onApprove={handleApproveQuotation}
+          onReject={handleRejectQuotation}
+        />
+
         {/* Approve Quotation Dialog */}
         <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Approve Quotation</DialogTitle>
               <DialogDescription>
-                Are you sure you want to approve quotation {selectedQuotation?.quotationNumber}? 
+                Are you sure you want to approve this quotation? 
                 This will make it ready for order conversion.
               </DialogDescription>
             </DialogHeader>
@@ -280,7 +292,12 @@ export default function QuotationsPage() {
                 Cancel
               </Button>
               <Button 
-                onClick={() => selectedQuotation && handleApproveQuotation(selectedQuotation)}
+                onClick={() => {
+                  const quotation = quotations.find(q => q._id === selectedQuotationId);
+                  if (quotation) {
+                    handleApproveQuotation(quotation);
+                  }
+                }}
                 disabled={approveLoading}
               >
                 {approveLoading ? 'Approving...' : 'Approve Quotation'}
@@ -295,7 +312,7 @@ export default function QuotationsPage() {
             <DialogHeader>
               <DialogTitle>Reject Quotation</DialogTitle>
               <DialogDescription>
-                Please provide a reason for rejecting quotation {selectedQuotation?.quotationNumber}.
+                Please provide a reason for rejecting this quotation.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -315,7 +332,12 @@ export default function QuotationsPage() {
               </Button>
               <Button 
                 variant="destructive" 
-                onClick={handleRejectQuotation}
+                onClick={() => {
+                  const quotation = quotations.find(q => q._id === selectedQuotationId);
+                  if (quotation) {
+                    handleRejectQuotation(quotation, rejectionReason);
+                  }
+                }}
                 disabled={!rejectionReason.trim() || rejectLoading}
               >
                 {rejectLoading ? 'Rejecting...' : 'Reject Quotation'}

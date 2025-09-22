@@ -88,6 +88,37 @@ export class UserController {
   }
 
   /**
+   * Get staff names by IDs
+   * POST /api/v1/users/staff-names
+   */
+  static async getStaffNamesByIds(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { staffIds } = req.body;
+
+      if (!Array.isArray(staffIds) || staffIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: 'Staff IDs array is required'
+        });
+      }
+
+      const staffNames = await UserService.getStaffNamesByIds(staffIds);
+
+      Logger.info('Staff names fetched successfully', { count: Object.keys(staffNames).length });
+
+      res.status(200).json({
+        success: true,
+        data: staffNames,
+        message: 'Staff names retrieved successfully'
+      });
+    } catch (error) {
+      Logger.error('Failed to fetch staff names', error as Error, { staffIds: req.body.staffIds });
+      next(error);
+    }
+  }
+
+  /**
    * Update user (Admin only)
    * PUT /api/v1/users/:id
    */

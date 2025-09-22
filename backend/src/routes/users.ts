@@ -13,6 +13,7 @@ const router = Router();
 
 // User management routes (Admin only)
 router.get('/', authenticate, authorize(['admin']), UserController.getAllUsers);
+router.post('/staff-names', authenticate, UserController.getStaffNamesByIds);
 router.get('/statistics', authenticate, authorize(['admin']), UserController.getUserStatistics);
 router.get('/staff', authenticate, authorize(['admin']), UserController.getStaffMembers);
 router.get('/customers', authenticate, authorize(['admin']), UserController.getCustomers);

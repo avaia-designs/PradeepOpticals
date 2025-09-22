@@ -139,6 +139,34 @@ export class UserService {
   }
 
   /**
+   * Get staff names by IDs
+   */
+  static async getStaffNamesByIds(staffIds: string[]): Promise<Record<string, string>> {
+    try {
+      Logger.info('Fetching staff names by IDs', { staffIds });
+
+      const staff = await User.find({
+        _id: { $in: staffIds },
+        role: { $in: ['staff', 'admin'] }
+      })
+        .select('_id name')
+        .lean()
+        .exec();
+
+      const staffNames: Record<string, string> = {};
+      staff.forEach(member => {
+        staffNames[member._id.toString()] = member.name;
+      });
+
+      Logger.info('Staff names fetched successfully', { count: staff.length });
+      return staffNames;
+    } catch (error) {
+      Logger.error('Failed to fetch staff names', error as Error, { staffIds });
+      throw error;
+    }
+  }
+
+  /**
    * Update user (Admin only)
    */
   static async updateUser(id: string, updateData: any): Promise<any> {
