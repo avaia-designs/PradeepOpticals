@@ -12,6 +12,9 @@ export enum NotificationType {
   QUOTATION_APPROVED = 'quotation_approved',
   QUOTATION_REJECTED = 'quotation_rejected',
   QUOTATION_CONVERTED = 'quotation_converted',
+  STAFF_REPLY = 'staff_reply',
+  CUSTOMER_APPROVAL = 'customer_approval',
+  CUSTOMER_REJECTION = 'customer_rejection',
   SYSTEM_ANNOUNCEMENT = 'system_announcement'
 }
 
@@ -206,5 +209,37 @@ notificationSchema.methods.isExpired = function() {
   return this.expiresAt && this.expiresAt < new Date();
 };
 
+// Static methods interface
+interface INotificationModel extends mongoose.Model<INotificationDocument> {
+  createNotification(
+    userId: string,
+    type: NotificationType,
+    title: string,
+    message: string,
+    options?: {
+      priority?: NotificationPriority;
+      actionUrl?: string;
+      metadata?: Record<string, any>;
+      expiresAt?: Date;
+    }
+  ): Promise<INotificationDocument>;
+  
+  getUserNotifications(
+    userId: string,
+    options?: {
+      page?: number;
+      limit?: number;
+      isRead?: boolean;
+      type?: NotificationType;
+      priority?: NotificationPriority;
+    }
+  ): Promise<INotificationDocument[]>;
+  
+  markAsRead(notificationIds: string[], userId: string): Promise<any>;
+  markAllAsRead(userId: string): Promise<any>;
+  getUnreadCount(userId: string): Promise<number>;
+  deleteExpired(): Promise<any>;
+}
+
 // Export the Notification model
-export const Notification = mongoose.model<INotificationDocument>('Notification', notificationSchema);
+export const Notification = mongoose.model<INotificationDocument, INotificationModel>('Notification', notificationSchema);

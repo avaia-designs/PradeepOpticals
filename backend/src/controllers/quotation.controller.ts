@@ -207,7 +207,7 @@ export const approveQuotation = async (req: AuthenticatedRequest, res: Response,
   try {
     const { id } = req.params;
     const { staffNotes } = req.body;
-    const staffId = req.user?._id;
+    const staffId = req.user?.id;
     const userRole = req.user?.role;
 
     if (!['staff', 'admin'].includes(userRole || '')) {
@@ -276,7 +276,7 @@ export const rejectQuotation = async (req: AuthenticatedRequest, res: Response, 
   try {
     const { id } = req.params;
     const { reason, staffNotes } = req.body;
-    const staffId = req.user?._id;
+    const staffId = req.user?.id;
     const userRole = req.user?.role;
 
     if (!['staff', 'admin'].includes(userRole || '')) {
@@ -353,7 +353,7 @@ export const rejectQuotation = async (req: AuthenticatedRequest, res: Response, 
 export const convertQuotationToOrder = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const staffId = req.user?._id;
+    const staffId = req.user?.id;
     const userRole = req.user?.role;
 
     if (!['staff', 'admin'].includes(userRole || '')) {
@@ -726,7 +726,7 @@ export const addStaffReply = async (req: AuthenticatedRequest, res: Response, ne
   try {
     const { id } = req.params;
     const { message } = req.body;
-    const staffId = req.user?._id;
+    const staffId = req.user?.id;
     const userRole = req.user?.role;
 
     if (!['staff', 'admin'].includes(userRole || '')) {

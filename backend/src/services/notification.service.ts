@@ -202,6 +202,80 @@ export class NotificationService {
   }
 
   /**
+   * Create staff reply notification
+   */
+  static async createStaffReplyNotification(
+    userId: string,
+    quotationData: {
+      quotationNumber: string;
+      message: string;
+    }
+  ) {
+    return this.createNotification({
+      userId,
+      type: NotificationType.STAFF_REPLY,
+      title: 'New Staff Reply',
+      message: `Staff replied to quotation ${quotationData.quotationNumber}: ${quotationData.message.length > 100 ? quotationData.message.substring(0, 100) + '...' : quotationData.message}`,
+      priority: NotificationPriority.HIGH,
+      actionUrl: `/quotations`,
+      metadata: {
+        quotationNumber: quotationData.quotationNumber,
+        message: quotationData.message
+      }
+    });
+  }
+
+  /**
+   * Create customer approval notification
+   */
+  static async createCustomerApprovalNotification(
+    staffId: string,
+    quotationData: {
+      quotationNumber: string;
+      customerName: string;
+    }
+  ) {
+    return this.createNotification({
+      userId: staffId,
+      type: NotificationType.CUSTOMER_APPROVAL,
+      title: 'Customer Approved Quotation',
+      message: `${quotationData.customerName} has approved quotation ${quotationData.quotationNumber}`,
+      priority: NotificationPriority.HIGH,
+      actionUrl: `/quotations`,
+      metadata: {
+        quotationNumber: quotationData.quotationNumber,
+        customerName: quotationData.customerName
+      }
+    });
+  }
+
+  /**
+   * Create customer rejection notification
+   */
+  static async createCustomerRejectionNotification(
+    staffId: string,
+    quotationData: {
+      quotationNumber: string;
+      customerName: string;
+      reason: string;
+    }
+  ) {
+    return this.createNotification({
+      userId: staffId,
+      type: NotificationType.CUSTOMER_REJECTION,
+      title: 'Customer Rejected Quotation',
+      message: `${quotationData.customerName} has rejected quotation ${quotationData.quotationNumber}. Reason: ${quotationData.reason}`,
+      priority: NotificationPriority.MEDIUM,
+      actionUrl: `/quotations`,
+      metadata: {
+        quotationNumber: quotationData.quotationNumber,
+        customerName: quotationData.customerName,
+        reason: quotationData.reason
+      }
+    });
+  }
+
+  /**
    * Create system announcement notification
    */
   static async createSystemAnnouncementNotification(
